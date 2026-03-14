@@ -1,5 +1,6 @@
 const BASE_URL = 'http://localhost:3000';
 
+// Handle API responses
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
 
@@ -11,23 +12,30 @@ const handleResponse = async (response) => {
     return data;
 };
 
+// Helper to get headers with token
+const getHeaders = () => {
+    const token = localStorage.getItem("userToken"); // your JWT
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // send token in headers
+    };
+};
+
+// GET request
 const getData = async (endpoint) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getHeaders(),
     });
 
     return handleResponse(response);
 };
 
+// POST request
 const postData = async (endpoint, body) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getHeaders(),
         body: JSON.stringify(body),
     });
 

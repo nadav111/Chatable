@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./db/db.connection.js";
 import homeRouter from "./routers/home.router.js";
 import messagesRouter from "./routers/messages.router.js";
+import chatRouter from "./routers/chat.router.js";
 import errorMiddleware from "./middlewares/errorMiddleware.js";
 import cors from 'cors';
 
@@ -12,12 +13,7 @@ connectDB();
 const app = express();
 const port = 3000;
 
-app.use(cors({
-  origin: ['http://127.0.0.1:5500', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
+app.use(cors());
 
 // Middleware
 app.use(express.json());
@@ -25,6 +21,7 @@ app.use(express.json());
 // Routes
 app.use("/home", homeRouter);
 app.use("/messages", messagesRouter);
+app.use("/chats", chatRouter);
 
 app.use(errorMiddleware);
 

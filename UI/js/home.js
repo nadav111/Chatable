@@ -1,4 +1,7 @@
-import { sendMessage } from "../api/api.js";
+import { get } from "node:http";
+import { sendMessage, getChats } from "../api/api.js";
+
+let currentChatId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     if (!getUserToken()) {
@@ -7,22 +10,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    attachEventListeners();
+    addEventListeners();
+
+    addChatsToSidebar();
     loadInitialMessages();
 });
 
-function getUserToken() {
-    return localStorage.getItem("userToken");
-}
 
-function attachEventListeners() {
+const addEventListeners = () => {
     const sendBtn = document.getElementById("sendBtn");
     const messageInput = document.getElementById("messageInput");
-
-    if (!sendBtn || !messageInput) {
-        console.error("Send button or message input not found");
-        return;
-    }
 
     sendBtn.addEventListener("click", handleSendMessage);
 
@@ -31,30 +28,52 @@ function attachEventListeners() {
     });
 }
 
-// Create and display a message in the UI
-function createUIMessage(text, type) {
-    const container = document.getElementById("messages");
-    if (!container) return;
-
-    const message = document.createElement("div");
-    message.className = `message ${type}`;
-    message.textContent = text;
-
-    container.appendChild(message);
-    // Scroll to the bottom to show the latest message
-    container.scrollTop = container.scrollHeight;
+// -- USER --
+const getUserToken = () => {
+    return localStorage.getItem("userToken");
 }
 
+const getUserChats = async () => {
+    const token = getUserToken();
+    if (!token) {
+        console.log("User not logged in, redirecting to login");
+        window.location.href = "login.html";
+        return;
+    }
+
+    try {
+        const response = await getChats(token);
+        
+        if (!response.ok) {
+            throw new Error("Failed to fetch chats");
+        }
+        const chats = await response.json();
+        
+        return chats;
+    } catch (err) {
+        console.error("Error fetching chats:", err);
+        alert("Failed to load chats. Please try again.");
+    }
+};
+
+
 // Handle sending a message
-async function handleSendMessage() {
+const handleSendMessage = async () => {
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
     const token = getUserToken();
 
     if (!text || !token) return;
 
+    if (!currentChatId) {
+        alert("Please select a chat first");
+        return;
+    }
+
     try {
-        await sendMessage(token, text, 1); // Assuming chatId is 1 for simplicity
+        console.log("Sending message: " + text + " with token: " + token + " to chatId: " + currentChatId);
+
+        await sendMessage(token, text, currentChatId);
 
         createUIMessage(text, "sent");
 
@@ -67,13 +86,29 @@ async function handleSendMessage() {
     }
 }
 
-function simulateAutoReply(text) {
+// -- END USER --
+
+// -- UI --
+const createUIMessage = (text, type) => {
+    const container = document.getElementById("messages");
+    if (!container) return;
+
+    const message = document.createElement("div");
+    message.className = `message ${type}`;
+    message.textContent = text;
+
+    container.appendChild(message);
+    // Scroll to the bottom to show the latest message
+    container.scrollTop = container.scrollHeight;
+}
+
+const simulateAutoReply = (text) => {
     setTimeout(() => {
         createUIMessage(`Auto reply to: ${text}`, "received");
     }, 800);
 }
 
-function loadInitialMessages() {
+const loadInitialMessages = async () => {
     const initialMessages = [
         { text: "Hey 👋", type: "received" },
         { text: "Hi! How are you?", type: "sent" },
@@ -82,3 +117,25 @@ function loadInitialMessages() {
 
     initialMessages.forEach((msg) => createUIMessage(msg.text, msg.type));
 }
+
+const addChatsToSidebar = async () => {
+    const chats = await getUserChats();
+    const chatList = document.getElementById("chat-list");
+
+    chatList.innerHTML = "";
+
+    chats.forEach((chat) => {
+        const chatElement = document.createElement("div");
+        chatElement.className = "chat";
+        chatElement.textContent = chat.name;
+
+        chatElement.addEventListener("click", () => {
+            currentChatId = chat.id;
+            console.log("Selected chat:", currentChatId);
+        });
+
+        chatList.appendChild(chatElement);
+    });
+};
+
+// -- END UI --

@@ -1,4 +1,4 @@
-import { postData } from './apiClient.js';
+import { postData, getData } from './apiClient.js';
 
 const login = async (username, password) => {
     return postData('/home/login', { username, password });
@@ -14,4 +14,10 @@ const sendMessage = async (token, message, chatId) => {
     return postData('/messages/send', { token, message, chatId });
 };
 
-export { login, register, sendMessage };
+const getChats = async (token) => {
+    console.log("Fetching chats with token:", token);
+    
+    return getData('/chats', { token });
+}
+
+export { login, register, sendMessage, getChats };
