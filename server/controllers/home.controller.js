@@ -6,8 +6,6 @@ const handlerLogin = async (req, res) => {
 };
 
 const handleRegister = async (req, res) => {
-  console.log(req.body);
-  
   const newUser = await register(req.body);
   res.status(201).json(newUser);
 };

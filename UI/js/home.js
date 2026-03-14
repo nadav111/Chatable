@@ -115,6 +115,7 @@ const handleSendMessage = async () => {
 
 const loadMessagesForChat = async (chatId) => {
     const token = getUserToken();
+
     if (!token || !chatId) return;
 
     const container = document.getElementById("messages");
@@ -183,6 +184,10 @@ const loadChatsToSidebar = async () => {
         chatElement.addEventListener("click", () => {
             currentChatId = chat._id;
             loadMessagesForChat(currentChatId);
+
+            const chatHeader = document.querySelector(".chat-header");
+
+            chatHeader.textContent = chatElement.textContent;
 
             document
                 .querySelectorAll(".chat-item")

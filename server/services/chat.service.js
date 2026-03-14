@@ -20,14 +20,10 @@ const getChats = async (token) => {
 };
 
 const createChat = async (token, username) => {
-  console.log("Creating chat with username:", username);
-
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   const currentUserId = decoded.id;
 
   const otherUser = await User.findOne({ username });
-
-  console.log("Creating chat with: ", otherUser);
 
   if (!otherUser) {
     throw new Error("User not found");
@@ -49,8 +45,6 @@ const createChat = async (token, username) => {
     title: `${otherUser.username} & You`,
     participants: [currentUserId, otherUser._id]
   });
-
-  console.log("Created new chat:", chat);
 
   return chat;
 };

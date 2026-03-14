@@ -13,7 +13,8 @@ const handleSendMessage = async (req, res) => {
 const handleLoadMessages = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
-        const { chatId } = req.params;
+        const chatId = req.headers['chat-id'];
+
         const messages = await getMessages({ token, chatId });
         res.status(200).json(messages);
     } catch (err) {
@@ -21,4 +22,4 @@ const handleLoadMessages = async (req, res) => {
     }
 };
 
-export { handleSendMessage, handleLoadMessages };
+ export { handleSendMessage, handleLoadMessages };

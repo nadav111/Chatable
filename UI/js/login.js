@@ -22,8 +22,6 @@ async function handleLoginSubmit(e) {
   try {
     const response = await login(username, password);
 
-    console.log(response);
-
     if (response.token) {
       localStorage.setItem('userToken', response.token);
       window.location.href = 'home.html';

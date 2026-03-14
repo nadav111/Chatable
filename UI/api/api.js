@@ -15,8 +15,9 @@ const sendMessage = async (token, message, chatId) => {
 };
 
 const getMessages = async (token, chatId) => {
-    return getData(`/messages/${chatId}`, {
-        'Authorization': `Bearer ${token}`
+    return getData('/messages/load', {
+        'Authorization': `Bearer ${token}`,
+        'chat-id': chatId
     });
 };
 

@@ -26,8 +26,6 @@ async function handleRegisterSubmit(e) {
     return;
   }
 
-  console.log('Registering user:', { username, email });
-
   setButtonLoading(registerBtn, true);
 
   try {

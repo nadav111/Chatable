@@ -12,8 +12,6 @@ const generateToken = (userId) => {
 const register = async ({ username, email, password }) => {
   const existingUser = await User.findOne({ email });
 
-  console.log(existingUser);
-
   if (existingUser) {
     throw new Error("User already exists");
   }
@@ -24,11 +22,7 @@ const register = async ({ username, email, password }) => {
     password
   });
 
-  console.log(user);
-
   const token = generateToken(user._id);
-
-  console.log(token);
 
   return { token };
 };

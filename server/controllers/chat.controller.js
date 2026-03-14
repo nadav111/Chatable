@@ -18,8 +18,6 @@ const handleCreateChat = async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const { username } = req.body;
 
-    console.log("Received request to create chat with username:", username);
-
     const chat = await createChat(token, username);
 
     res.status(201).json(chat);
