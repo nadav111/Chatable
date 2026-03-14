@@ -24,7 +24,9 @@
                 </div>
             </div>
 
-            <div class="chat-list">
+            <div id="add-chat"> + Add Chat</div>
+
+            <div id="chat-list">
                 <div class="chat-item active">general</div>
                 <div class="chat-item">gaming</div>
                 <div class="chat-item">dev-talk</div>
@@ -45,6 +47,19 @@
             </div>
         </main>
 
+    </div>
+    
+    <div id="addChatModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Create Chat</h2>
+
+            <input type="text" id="chatUserInput" placeholder="Enter username">
+
+            <div class="modal-actions">
+                <button id="closeModalBtn">Cancel</button>
+                <button id="createChatBtn">Create</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="../js/home.js"></script>

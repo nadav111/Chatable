@@ -2,9 +2,24 @@ import jwt from "jsonwebtoken";
 import Chat from "../models/chat.js";
 
 const getChats = async (token) => {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  if (!token) {
+    throw new Error("No token provided");
+  }
 
-  return Chat.find({ participants: decoded.id });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded user ID:", decoded.id);
+
+    const chats = await Chat.find({ participants: decoded.id })
+      .populate("participants", "username email");
+      
+    console.log("Chats found for user:", chats);
+
+    return chats;
+  } catch (err) {
+    console.error("Failed to get chats:", err);
+    throw new Error("Invalid or expired token");
+  }
 };
 
 export { getChats };

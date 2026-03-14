@@ -1,4 +1,3 @@
-import { get } from "node:http";
 import { sendMessage, getChats } from "../api/api.js";
 
 let currentChatId = null;
@@ -23,10 +22,34 @@ const addEventListeners = () => {
 
     sendBtn.addEventListener("click", handleSendMessage);
 
+    addChatModal();
+
     messageInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") handleSendMessage();
     });
 }
+
+const addChatModal = () => {
+    const addChatBtn = document.getElementById("add-chat");
+    const modal = document.getElementById("addChatModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const createChatBtn = document.getElementById("createChatBtn");
+
+    addChatBtn.addEventListener("click", () => {
+        modal.classList.remove("hidden");
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+        modal.classList.add("hidden");
+    });
+
+    createChatBtn.addEventListener("click", () => {
+        const username = document.getElementById("chatUserInput").value;
+
+        console.log("Creating chat with:", username);
+
+        modal.classList.add("hidden");
+})};
 
 // -- USER --
 const getUserToken = () => {
@@ -43,13 +66,9 @@ const getUserChats = async () => {
 
     try {
         const response = await getChats(token);
+        console.log("Raw response from getChats:", response);
         
-        if (!response.ok) {
-            throw new Error("Failed to fetch chats");
-        }
-        const chats = await response.json();
-        
-        return chats;
+        return response;
     } catch (err) {
         console.error("Error fetching chats:", err);
         alert("Failed to load chats. Please try again.");

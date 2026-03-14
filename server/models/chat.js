@@ -10,7 +10,4 @@ const chatSchema = new mongoose.Schema({
   ]
 }, { timestamps: true });
 
-// index to quickly find user chats
-chatSchema.index({ participants: 1 });
-
 export default mongoose.model("Chat", chatSchema);

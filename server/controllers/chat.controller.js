@@ -5,6 +5,7 @@ const handleGetChats = async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
 
     const chats = await getChats(token);
+    console.log("Chats to be sent in response:", chats);
 
     res.status(200).json(chats);
   } catch (err) {

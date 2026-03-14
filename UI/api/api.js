@@ -11,13 +11,16 @@ const register = async (username, email, password) => {
 const sendMessage = async (token, message, chatId) => {
     console.log("Sending message:", { token, message, chatId });
     
-    return postData('/messages/send', { token, message, chatId });
+    return postData('/messages/send', { message, chatId }, { 
+        'Authorization': `Bearer ${token}` 
+    });
 };
 
 const getChats = async (token) => {
     console.log("Fetching chats with token:", token);
     
-    return getData('/chats', { token });
-}
-
+    return getData('/chats', { 
+        'Authorization': `Bearer ${token}` 
+    });
+};
 export { login, register, sendMessage, getChats };
