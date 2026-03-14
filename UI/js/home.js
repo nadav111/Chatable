@@ -1,11 +1,15 @@
-import { sendMessage, getChats, createChat, getMessages } from "../api/api.js";
+import { sendMessage, getChats, createChat, getMessages, getUserByToken } from "../api/api.js";
 
 let currentChatId = null;
+let currentUser = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const token = getUserToken();
     if (!token) return;
 
+    currentUser = await getUserByToken(token);
+
+    updateProfile();
     addEventListeners();
     loadChatsToSidebar();
 });
@@ -21,6 +25,12 @@ const addEventListeners = () => {
     messageInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") handleSendMessage();
     });
+};
+
+const updateProfile = () => {
+    if (!currentUser) return;
+
+    document.getElementById("profileUsername").textContent = currentUser.username;
 };
 
 const addChatModal = () => {
@@ -68,27 +78,12 @@ const getUserToken = () => {
     return token;
 };
 
-// Adjust the payload field name to match your JWT (e.g. "id", "_id", "sub")
-const getCurrentUserId = () => {
-    const token = getUserToken();
-    if (!token) return null;
-
-    try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        return payload.id || payload._id || payload.sub || null;
-    } catch (err) {
-        console.error("Failed to decode token:", err);
-        return null;
-    }
-};
-
 const getUserChats = async () => {
     const token = getUserToken();
     if (!token) return [];
 
     try {
-        const response = await getChats(token);
-        return response;
+        return await getChats(token);
     } catch (err) {
         console.error("Error fetching chats:", err);
         alert("Failed to load chats. Please try again.");
@@ -138,11 +133,9 @@ const loadMessagesForChat = async (chatId) => {
             return;
         }
 
-        const currentUserId = getCurrentUserId();
-
         messages.forEach((msg) => {
             const senderId = msg.sender?._id || msg.sender;
-            const type = senderId === currentUserId ? "sent" : "received";
+            const type = senderId === (currentUser._id || currentUser.id) ? "sent" : "received";
             createUIMessage(msg.text || msg.content, type);
         });
     } catch (err) {
@@ -174,15 +167,13 @@ const loadChatsToSidebar = async () => {
 
     chatList.innerHTML = "";
 
-    const currentUserId = getCurrentUserId();
-
     chats.forEach((chat) => {
         const chatElement = document.createElement("div");
         chatElement.className = "chat-item";
 
         if (chat.participants.length === 2) {
             const otherUser = chat.participants.find(
-                (p) => (p._id || p.id) !== currentUserId
+                (p) => (p._id || p.id) !== (currentUser._id || currentUser.id)
             );
             chatElement.textContent = otherUser?.username || "Chat";
         } else {

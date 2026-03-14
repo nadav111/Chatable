@@ -1,10 +1,10 @@
 import { login as authLogin } from "./auth.service.js";
 import { register as authRegister } from "./auth.service.js";
+import User from "../models/user.js";
+import jwt from "jsonwebtoken";
 
 const login = async (data) => {
   const result = await authLogin(data);
-
-  console.log(result);
 
   return result;
 };
@@ -12,9 +12,15 @@ const login = async (data) => {
 const register = async (data) => {
   const result = await authRegister(data);
 
-  console.log(result);
-
   return result;
 };
 
-export { login, register };
+const getUserByToken = async (token) => {
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findOne({ _id: decoded.id });
+
+  return user;
+};
+
+
+export { login, register, getUserByToken };

@@ -9,13 +9,9 @@ const getChats = async (token) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded user ID:", decoded.id);
-
     const chats = await Chat.find({ participants: decoded.id })
       .populate("participants", "username email");
       
-    console.log("Chats found for user:", chats);
-
     return chats;
   } catch (err) {
     console.error("Failed to get chats:", err);
@@ -31,8 +27,7 @@ const createChat = async (token, username) => {
 
   const otherUser = await User.findOne({ username });
 
-  console.log("Creating chat - current user ID:", currentUserId);
-  console.log("Creating chat - other user found:", otherUser);
+  console.log("Creating chat with: ", otherUser);
 
   if (!otherUser) {
     throw new Error("User not found");

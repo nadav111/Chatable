@@ -32,4 +32,10 @@ const createChat = async (token, username) => {
     });
 };
 
-export { login, register, sendMessage, getMessages, getChats, createChat };
+const getUserByToken = async (token) => {
+    return getData('/home/profile', {
+        'Authorization': `Bearer ${token}`
+    });
+}
+
+export { login, register, sendMessage, getMessages, getChats, createChat, getUserByToken };
