@@ -134,8 +134,8 @@ const loadMessagesForChat = async (chatId) => {
         }
 
         messages.forEach((msg) => {
-            const senderId = msg.sender?._id || msg.sender;
-            const type = senderId === (currentUser._id || currentUser.id) ? "sent" : "received";
+            const senderId = msg.sender?._id;
+            const type = senderId === (currentUser._id) ? "sent" : "received";
             createUIMessage(msg.text || msg.content, type);
         });
     } catch (err) {
@@ -173,7 +173,7 @@ const loadChatsToSidebar = async () => {
 
         if (chat.participants.length === 2) {
             const otherUser = chat.participants.find(
-                (p) => (p._id || p.id) !== (currentUser._id || currentUser.id)
+                (p) => (p._id) !== (currentUser._id)
             );
             chatElement.textContent = otherUser?.username || "Chat";
         } else {
@@ -181,7 +181,7 @@ const loadChatsToSidebar = async () => {
         }
 
         chatElement.addEventListener("click", () => {
-            currentChatId = chat._id || chat.id;
+            currentChatId = chat._id;
             loadMessagesForChat(currentChatId);
 
             document
