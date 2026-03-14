@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SNAS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/home.css">
+</head>
+<body>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">SNAS</div>
+
+            <div class="profile">
+                <div class="avatar"></div>
+                <div>
+                    <div class="name">Nadav</div>
+                    <div class="status">● Online</div>
+                </div>
+            </div>
+
+            <div class="chat-list">
+                <div class="chat-item active">general</div>
+                <div class="chat-item">gaming</div>
+                <div class="chat-item">dev-talk</div>
+            </div>
+        </aside>
+
+        <!-- Chat -->
+        <main class="chat">
+            <header class="chat-header">
+                general
+            </header>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button id="sendBtn">Send</button>
+            </div>
+        </main>
+
+    </div>
+
+    <script type="module" src="../js/home.js"></script>
+</body>
+</html>
