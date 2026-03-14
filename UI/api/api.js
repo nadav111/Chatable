@@ -9,27 +9,27 @@ const register = async (username, email, password) => {
 };
 
 const sendMessage = async (token, message, chatId) => {
-    console.log("Sending message:", { token, message, chatId });
-    
     return postData('/messages/send', { message, chatId }, { 
         'Authorization': `Bearer ${token}` 
     });
 };
 
+const getMessages = async (token, chatId) => {
+    return getData(`/messages/${chatId}`, {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
 const getChats = async (token) => {
-    console.log("Fetching chats with token:", token);
-    
     return getData('/chats', { 
         'Authorization': `Bearer ${token}` 
     });
 };
 
 const createChat = async (token, username) => {
-    console.log("Creating chat with username:", username, "and token:", token);
-
     return postData('/chats/create', { username }, {
         'Authorization': `Bearer ${token}` 
     });
 };
 
-export { login, register, sendMessage, getChats, createChat };
+export { login, register, sendMessage, getMessages, getChats, createChat };

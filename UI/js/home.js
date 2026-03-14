@@ -1,14 +1,13 @@
-import { sendMessage, getChats, createChat } from "../api/api.js";
+import { sendMessage, getChats, createChat, getMessages } from "../api/api.js";
 
 let currentChatId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    getUserToken(); // Ensure user is logged in before doing anything else
+    const token = getUserToken();
+    if (!token) return;
 
     addEventListeners();
-
     loadChatsToSidebar();
-    loadInitialMessages();
 });
 
 const addEventListeners = () => {
@@ -22,7 +21,7 @@ const addEventListeners = () => {
     messageInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") handleSendMessage();
     });
-}
+};
 
 const addChatModal = () => {
     const addChatBtn = document.getElementById("add-chat");
@@ -39,45 +38,64 @@ const addChatModal = () => {
     });
 
     createChatBtn.addEventListener("click", async () => {
-        const username = document.getElementById("chatUserInput").value;
+        const username = document.getElementById("chatUserInput").value.trim();
 
-        // TODO:
-        await createChat(getUserToken(), username);
+        if (!username) {
+            alert("Please enter a username.");
+            return;
+        }
 
-        console.log("Creating chat with:", username);
+        try {
+            await createChat(getUserToken(), username);
+            modal.classList.add("hidden");
+            document.getElementById("chatUserInput").value = "";
+            loadChatsToSidebar();
+        } catch (err) {
+            console.error("Error creating chat:", err);
+            alert("Failed to create chat. Please try again.");
+        }
+    });
+};
 
-        modal.classList.add("hidden");
-})};
-
-// -- USER --
 const getUserToken = () => {
     const token = localStorage.getItem("userToken");
 
     if (!token) {
-        console.log("User not logged in, redirecting to login");
         window.location.href = "login.html";
-        return;
+        return null;
     }
 
     return token;
-}
+};
+
+// Adjust the payload field name to match your JWT (e.g. "id", "_id", "sub")
+const getCurrentUserId = () => {
+    const token = getUserToken();
+    if (!token) return null;
+
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return payload.id || payload._id || payload.sub || null;
+    } catch (err) {
+        console.error("Failed to decode token:", err);
+        return null;
+    }
+};
 
 const getUserChats = async () => {
     const token = getUserToken();
+    if (!token) return [];
 
     try {
         const response = await getChats(token);
-        console.log("Raw response from getChats:", response);
-        
         return response;
     } catch (err) {
         console.error("Error fetching chats:", err);
         alert("Failed to load chats. Please try again.");
+        return [];
     }
 };
 
-
-// Handle sending a message
 const handleSendMessage = async () => {
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
@@ -86,29 +104,53 @@ const handleSendMessage = async () => {
     if (!text || !token) return;
 
     if (!currentChatId) {
-        alert("Please select a chat first");
+        alert("Please select a chat first.");
         return;
     }
 
     try {
-        console.log("Sending message: " + text + " with token: " + token + " to chatId: " + currentChatId);
-
         await sendMessage(token, text, currentChatId);
-
         createUIMessage(text, "sent");
-
         input.value = "";
-
-        simulateAutoReply(text);
     } catch (err) {
         console.error("Error sending message:", err);
         alert("Failed to send message. Please try again.");
     }
-}
+};
 
-// -- END USER --
+const loadMessagesForChat = async (chatId) => {
+    const token = getUserToken();
+    if (!token || !chatId) return;
 
-// -- UI --
+    const container = document.getElementById("messages");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    try {
+        const messages = await getMessages(token, chatId);
+
+        if (!messages || messages.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "empty-state";
+            empty.textContent = "No messages yet. Say hello!";
+            container.appendChild(empty);
+            return;
+        }
+
+        const currentUserId = getCurrentUserId();
+
+        messages.forEach((msg) => {
+            const senderId = msg.sender?._id || msg.sender;
+            const type = senderId === currentUserId ? "sent" : "received";
+            createUIMessage(msg.text || msg.content, type);
+        });
+    } catch (err) {
+        console.error("Error loading messages:", err);
+        alert("Failed to load messages. Please try again.");
+    }
+};
+
 const createUIMessage = (text, type) => {
     const container = document.getElementById("messages");
     if (!container) return;
@@ -118,48 +160,45 @@ const createUIMessage = (text, type) => {
     message.textContent = text;
 
     container.appendChild(message);
-    // Scroll to the bottom to show the latest message
     container.scrollTop = container.scrollHeight;
-}
-
-const simulateAutoReply = (text) => {
-    setTimeout(() => {
-        createUIMessage(`Auto reply to: ${text}`, "received");
-    }, 800);
-}
-
-const loadInitialMessages = async () => {
-    const initialMessages = [
-        { text: "Hey 👋", type: "received" },
-        { text: "Hi! How are you?", type: "sent" },
-        { text: "I'm working on a project.", type: "received" }
-    ];
-
-    initialMessages.forEach((msg) => createUIMessage(msg.text, msg.type));
-}
+};
 
 const loadChatsToSidebar = async () => {
     const chats = await getUserChats();
-    console.log("Chats loaded for sidebar:", chats);
-
     const chatList = document.getElementById("chat-list");
 
+    if (!chats || chats.length === 0) {
+        chatList.innerHTML = "<div class='empty-state'>No chats yet.</div>";
+        return;
+    }
+
     chatList.innerHTML = "";
+
+    const currentUserId = getCurrentUserId();
 
     chats.forEach((chat) => {
         const chatElement = document.createElement("div");
         chatElement.className = "chat-item";
-        chatElement.textContent = chat.title;
 
-        console.log("Adding chat to sidebar:", chat);
+        if (chat.participants.length === 2) {
+            const otherUser = chat.participants.find(
+                (p) => (p._id || p.id) !== currentUserId
+            );
+            chatElement.textContent = otherUser?.username || "Chat";
+        } else {
+            chatElement.textContent = chat.title || "Chat";
+        }
 
         chatElement.addEventListener("click", () => {
-            currentChatId = chat.id;
-            console.log("Selected chat:", currentChatId);
+            currentChatId = chat._id || chat.id;
+            loadMessagesForChat(currentChatId);
+
+            document
+                .querySelectorAll(".chat-item")
+                .forEach((el) => el.classList.remove("active"));
+            chatElement.classList.add("active");
         });
 
         chatList.appendChild(chatElement);
     });
 };
-
-// -- END UI --
