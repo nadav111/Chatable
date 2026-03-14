@@ -23,4 +23,13 @@ const getChats = async (token) => {
         'Authorization': `Bearer ${token}` 
     });
 };
-export { login, register, sendMessage, getChats };
+
+const createChat = async (token, username) => {
+    console.log("Creating chat with username:", username, "and token:", token);
+
+    return postData('/chats/create', { username }, {
+        'Authorization': `Bearer ${token}` 
+    });
+};
+
+export { login, register, sendMessage, getChats, createChat };

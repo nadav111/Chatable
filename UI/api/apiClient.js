@@ -11,7 +11,7 @@ const handleResponse = async (response) => {
     return data;
 };
 
-const getData = async (endpoint, headers) => {
+const getData = async (endpoint, headers = {}) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'GET',
         headers: {
@@ -23,7 +23,7 @@ const getData = async (endpoint, headers) => {
     return handleResponse(response);
 };
 
-const postData = async (endpoint, body) => {
+const postData = async (endpoint, body, headers = {}) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {

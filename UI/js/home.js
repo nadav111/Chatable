@@ -1,20 +1,15 @@
-import { sendMessage, getChats } from "../api/api.js";
+import { sendMessage, getChats, createChat } from "../api/api.js";
 
 let currentChatId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (!getUserToken()) {
-        console.log("User not logged in, redirecting to login");
-        window.location.href = "login.html";
-        return;
-    }
+    getUserToken(); // Ensure user is logged in before doing anything else
 
     addEventListeners();
 
-    addChatsToSidebar();
+    loadChatsToSidebar();
     loadInitialMessages();
 });
-
 
 const addEventListeners = () => {
     const sendBtn = document.getElementById("sendBtn");
@@ -43,8 +38,11 @@ const addChatModal = () => {
         modal.classList.add("hidden");
     });
 
-    createChatBtn.addEventListener("click", () => {
+    createChatBtn.addEventListener("click", async () => {
         const username = document.getElementById("chatUserInput").value;
+
+        // TODO:
+        await createChat(getUserToken(), username);
 
         console.log("Creating chat with:", username);
 
@@ -53,16 +51,19 @@ const addChatModal = () => {
 
 // -- USER --
 const getUserToken = () => {
-    return localStorage.getItem("userToken");
-}
+    const token = localStorage.getItem("userToken");
 
-const getUserChats = async () => {
-    const token = getUserToken();
     if (!token) {
         console.log("User not logged in, redirecting to login");
         window.location.href = "login.html";
         return;
     }
+
+    return token;
+}
+
+const getUserChats = async () => {
+    const token = getUserToken();
 
     try {
         const response = await getChats(token);
@@ -137,16 +138,20 @@ const loadInitialMessages = async () => {
     initialMessages.forEach((msg) => createUIMessage(msg.text, msg.type));
 }
 
-const addChatsToSidebar = async () => {
+const loadChatsToSidebar = async () => {
     const chats = await getUserChats();
+    console.log("Chats loaded for sidebar:", chats);
+
     const chatList = document.getElementById("chat-list");
 
     chatList.innerHTML = "";
 
     chats.forEach((chat) => {
         const chatElement = document.createElement("div");
-        chatElement.className = "chat";
-        chatElement.textContent = chat.name;
+        chatElement.className = "chat-item";
+        chatElement.textContent = chat.title;
+
+        console.log("Adding chat to sidebar:", chat);
 
         chatElement.addEventListener("click", () => {
             currentChatId = chat.id;

@@ -1,29 +1,32 @@
-import { getChats } from "../services/chat.service.js";
+import { getChats, createChat } from "../services/chat.service.js";
 
 const handleGetChats = async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
 
     const chats = await getChats(token);
-    console.log("Chats to be sent in response:", chats);
 
     res.status(200).json(chats);
+
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
 };
 
-const handleAddChat = async (req, res) => {
+const handleCreateChat = async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
+    const { username } = req.body;
 
-    const chats = await getChats(token);
+    console.log("Received request to create chat with username:", username);
 
-    res.status(200).json(chats);
+    const chat = await createChat(token, username);
+
+    res.status(201).json(chat);
+
   } catch (err) {
-    res.status(401).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 };
 
-
-export { handleGetChats, handleAddChat };
+export { handleGetChats, handleCreateChat };

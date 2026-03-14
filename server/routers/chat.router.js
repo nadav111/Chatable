@@ -1,9 +1,9 @@
 import express from 'express';
-import { handleGetChats, handleAddChat } from '../controllers/chat.controller.js';
+import { handleGetChats, handleCreateChat } from '../controllers/chat.controller.js';
 
 const router = express.Router();
 
 router.get('/', handleGetChats);
-router.post('/add', handleAddChat);
+router.post('/create', handleCreateChat);
 
 export default router;
