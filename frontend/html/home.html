@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SNAS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/home.css">
+</head>
+<body>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">SNAS</div>
+
+            <div class="profile">
+                <div class="avatar"></div>
+                <div>
+                    <div class="name" id="profileUsername"></div>
+                    <div class="status">● Online</div>
+                </div>
+            </div>
+
+            <div id="add-chat"> + Add Chat</div>
+
+            <div id="chat-list">
+                
+            </div>
+        </aside>
+
+        <!-- Chat -->
+        <main class="chat">
+            <header class="chat-header">
+                
+            </header>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button id="sendBtn">Send</button>
+            </div>
+        </main>
+
+    </div>
+    
+    <div id="addChatModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Create Chat</h2>
+
+            <input type="text" id="chatUserInput" placeholder="Enter username">
+
+            <div class="modal-actions">
+                <button id="closeModalBtn">Cancel</button>
+                <button id="createChatBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../js/home.js"></script>
+</body>
+</html>
