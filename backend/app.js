@@ -8,7 +8,7 @@ import errorMiddleware from "./middlewares/errorMiddleware.js";
 import cors from 'cors';
 
 dotenv.config();
-connectDB();
+await connectDB();
 
 const app = express();
 const port = 3000;
