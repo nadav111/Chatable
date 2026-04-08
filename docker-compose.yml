@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: chatable
+      POSTGRES_USER: chatable_user
+      POSTGRES_PASSWORD: chatable_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY}/backend:latest
+    environment:
+      DATABASE_URL: postgresql://chatable_user:chatable_password@db:5432/chatable
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY}/frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
