@@ -15,7 +15,10 @@ spec:
       containers:
         - name: backend
           image: ghcr.io/nadav111/chatable/backend:latest
-          imagePullPolicy: Always
+          imagePullPolicy:
+             - name: ghcr-secret
+          ports:
+            - containerPort: 3000
           envFrom:
             - configMapRef:
                 name: db-config
