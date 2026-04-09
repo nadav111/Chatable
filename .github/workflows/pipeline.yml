@@ -75,31 +75,30 @@ jobs:
           docker push ${{ env.IMAGE_BASE }}/frontend:latest
 
   deploy:
-  needs: push
-  runs-on: ubuntu-latest
-  environment: prod
+    needs: push
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Copy k8s manifests to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CLUSTER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: k8s/
+          target: /opt/app
 
-    - name: Copy k8s manifests to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.CLUSTER_IP }}
-        username: ${{ secrets.SERVER_USER }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        source: k8s/
-        target: /opt/app
-
-    - name: Deploy via SSH (kubectl)
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.CLUSTER_IP }}
-        username: ${{ secrets.SERVER_USER }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        script: |
-          cd /opt/app/k8s
-          kubectl apply -f .
-          kubectl rollout restart deployment backend
-          kubectl rollout restart deployment frontend
+      - name: Deploy via SSH (kubectl)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CLUSTER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            cd /opt/app/k8s
+            kubectl apply -f .
+            kubectl rollout restart deployment backend
+            kubectl rollout restart deployment frontend
