@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: app-ingress
 spec:
+  ingressClassName: nginx
   rules:
   - host: chatable.local
     http:
