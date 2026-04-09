@@ -22,3 +22,15 @@ spec:
             name: db-config
         - secretRef:
             name: db-secret
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql
+        - name: ddl-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: db-data
+      - name: ddl-scripts
+        configMap:
+          name: db-ddl-config
