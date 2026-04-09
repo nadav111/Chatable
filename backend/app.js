@@ -11,7 +11,7 @@ dotenv.config();
 await connectDB();
 
 const app = express();
-const port = 80;
+const port = 3000;
 
 app.use(cors());
 
