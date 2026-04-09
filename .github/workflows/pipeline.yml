@@ -101,5 +101,5 @@ jobs:
             cd /opt/app/deployment
             kubectl apply -f backend/
             kubectl apply -f frontend/
-            kubectl rollout restart deployment backend
-            kubectl rollout restart deployment frontend
+            kubectl rollout restart deployment backend-deployment
+            kubectl rollout restart deployment frontend-deployment
