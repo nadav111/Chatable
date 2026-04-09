@@ -1,34 +1,67 @@
 name: CI/CD Pipeline
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
       - main
 
+env:
+  IMAGE_BASE: ghcr.io/nadav111/chatable  # base for image tags
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: production   # needed if using environment secrets
+    outputs:
+      backend_image: ${{ steps.backend.outputs.tag }}
+      frontend_image: ${{ steps.frontend.outputs.tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build images
+      - name: Build backend image
+        id: backend
         run: |
           docker build -t backend:latest ./backend
+          echo "tag=${IMAGE_BASE}/backend:latest" >> $GITHUB_OUTPUT
+
+      - name: Build frontend image
+        id: frontend
+        run: |
           docker build -t frontend:latest ./frontend
+          echo "tag=${IMAGE_BASE}/frontend:latest" >> $GITHUB_OUTPUT
+
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Login to GitHub Container Registry
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push images
+      - name: Push backend image
         run: |
-          docker tag backend:latest ghcr.io/nadav111/chatable/backend:latest
-          docker tag frontend:latest ghcr.io/nadav111/chatable/frontend:latest
-          docker push ghcr.io/nadav111/chatable/backend:latest
-          docker push ghcr.io/nadav111/chatable/frontend:latest
+          docker tag backend:latest ${{ env.IMAGE_BASE }}/backend:latest
+          docker push ${{ env.IMAGE_BASE }}/backend:latest
 
-      - name: Deploy
+      - name: Push frontend image
+        run: |
+          docker tag frontend:latest ${{ env.IMAGE_BASE }}/frontend:latest
+          docker push ${{ env.IMAGE_BASE }}/frontend:latest
+
+  deploy:
+    needs: push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.CLUSTER_IP }}
@@ -36,6 +69,6 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             cd /opt/app
-            docker-compose pull       # pull the latest images
-            docker-compose down       # stop old containers
-            docker-compose up -d      # start new containers
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
