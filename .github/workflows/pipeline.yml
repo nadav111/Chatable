@@ -34,11 +34,9 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.CLUSTER_IP }}
-          username: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            export REPO=${{ github.repository }}
-            export CLUSTER_IP=${{ secrets.CLUSTER_IP }}
             cd /opt/app
             docker-compose pull       # pull the latest images
             docker-compose down       # stop old containers
