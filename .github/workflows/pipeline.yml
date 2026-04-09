@@ -18,7 +18,7 @@ jobs:
           docker build -t frontend:latest ./frontend
 
       - name: Login to GitHub Container Registry
-        run: echo ${{ secrets.SERVER_PASSWORD }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push images
         run: |
