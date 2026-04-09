@@ -1,4 +1,7 @@
 name: CI/CD Pipeline
+permissions:
+  contents: read
+  packages: write
 
 on:
   push:
@@ -22,10 +25,10 @@ jobs:
 
       - name: Push images
         run: |
-          docker tag backend:latest ghcr.io/chatable/backend:latest
-          docker tag frontend:latest ghcr.io/chatable/frontend:latest
-          docker push ghcr.io/chatable/backend:latest
-          docker push ghcr.io/chatable/frontend:latest
+          docker tag backend:latest ghcr.io/nadav111/chatable/backend:latest
+          docker tag frontend:latest ghcr.io/nadav111/chatable/frontend:latest
+          docker push ghcr.io/nadav111/chatable/backend:latest
+          docker push ghcr.io/nadav111/chatable/frontend:latest
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
