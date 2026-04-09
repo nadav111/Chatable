@@ -15,7 +15,7 @@ spec:
       containers:
       - name: frontend
         image: ghcr.io/nadav111/chatable/frontend:latest
-        imagePullPolicy:
-           - name: ghcr-secret
+        imagePullSecrets:
+          - name: ghcr-secret
         ports:
         - containerPort: 80
