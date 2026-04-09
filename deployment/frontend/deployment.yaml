@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: frontend:latest
+        image: ghcr.io/nadav111/chatable/frontend:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80

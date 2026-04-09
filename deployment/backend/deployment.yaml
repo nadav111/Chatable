@@ -13,10 +13,21 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: backend:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DATABASE_URL
-          value: "postgresql://chatable_user:chatable_password@db-service:5432/chatable"
+        - name: backend
+          image: ghcr.io/nadav111/chatable/backend:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: db-config
+            - secretRef:
+                name: db-secret
+          env:
+            - name: DATABASE_HOST
+              value: "db-service"
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(DATABASE_HOST):5432/$(POSTGRES_DB)"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: JWT_SECRET
