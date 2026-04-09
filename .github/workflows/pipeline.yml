@@ -82,13 +82,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy k8s manifests to server
+      - name: Copy deployment manifests to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.CLUSTER_IP }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: k8s/
+          source: deployment/
           target: /opt/app
 
       - name: Deploy via SSH (kubectl)
@@ -98,7 +98,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            cd /opt/app/k8s
-            kubectl apply -f .
+            cd /opt/app/deployment
+            kubectl apply -f backend/
+            kubectl apply -f frontend/
             kubectl rollout restart deployment backend
             kubectl rollout restart deployment frontend
