@@ -22,10 +22,10 @@ jobs:
 
       - name: Push images
         run: |
-          docker tag backend:latest ghcr.io/${{ github.repository }}/backend:latest
-          docker tag frontend:latest ghcr.io/${{ github.repository }}/frontend:latest
-          docker push ghcr.io/${{ github.repository }}/backend:latest
-          docker push ghcr.io/${{ github.repository }}/frontend:latest
+          docker tag backend:latest ghcr.io/chatable/backend:latest
+          docker tag frontend:latest ghcr.io/chatable/frontend:latest
+          docker push ghcr.io/chatable/backend:latest
+          docker push ghcr.io/chatable/frontend:latest
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
