@@ -1,4 +1,4 @@
-const BASE_URL = 'http://backend-service';
+const BASE_URL = 'http://chatable.local/api';
 
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
