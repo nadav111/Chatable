@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = '/api';
 
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
