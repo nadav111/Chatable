@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+const BASE_URL = 'http://backend-service';
 
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
