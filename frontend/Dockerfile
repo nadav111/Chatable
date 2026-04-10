@@ -1,13 +1,22 @@
 FROM nginx:alpine
 
-# Copy HTML, CSS, and JS files
+# מחיקת הגדרת ברירת המחדל
+RUN rm /etc/nginx/conf.d/default.conf
+
+# יצירת הגדרה חדשה ופשוטה שמצביעה לתיקייה שלך
+RUN echo 'server { \
+    listen 80; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html; \
+    } \
+}' > /etc/nginx/conf.d/my_site.conf
+
+# העתקת הקבצים שלך (לפי המבנה שלך)
 COPY html /usr/share/nginx/html
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
 COPY api /usr/share/nginx/html/api
 
-# Expose port 80 for the UI
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
