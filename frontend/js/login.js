@@ -24,7 +24,7 @@ async function handleLoginSubmit(e) {
 
     if (response.token) {
       localStorage.setItem('userToken', response.token);
-      window.location.href = 'home.html';
+      window.location.href = 'index.html';
     } else {
       // alert only the error message from server
       alert(response.error || 'Login failed.');
