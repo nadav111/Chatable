@@ -1,4 +1,4 @@
-import { sendMessage, getChats, createChat, getMessages, getUserByToken } from "../api/api.js";
+import { sendMessage, getChats, createChat, getMessages, getUserByToken } from "/api/api.js";
 
 let currentChatId = null;
 let currentUser = null;
@@ -71,7 +71,7 @@ const getUserToken = () => {
     const token = localStorage.getItem("userToken");
 
     if (!token) {
-        window.location.href = "login.html";
+        window.location.href = "/login.html";
         return null;
     }
 
