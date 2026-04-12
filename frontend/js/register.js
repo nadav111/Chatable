@@ -1,4 +1,4 @@
-import { register } from '/api/api.js';
+import { register } from '/lib/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('registerForm');

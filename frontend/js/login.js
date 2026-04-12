@@ -1,4 +1,4 @@
-import { login } from '/api/api.js';
+import { login } from '/lib/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
