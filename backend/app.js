@@ -19,9 +19,9 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/home", homeRouter);
-app.use("/messages", messagesRouter);
-app.use("/chats", chatRouter);
+app.use("/api/home", homeRouter);
+app.use("/api/messages", messagesRouter);
+app.use("/api/chats", chatRouter);
 
 app.use(errorMiddleware);
 
