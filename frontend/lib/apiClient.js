@@ -9,6 +9,7 @@ const getBaseUrl = () => {
 };
 
 const BASE_URL = getBaseUrl();
+console.log(`API Client initialized with BASE_URL: ${BASE_URL}`);
 
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
@@ -46,4 +47,16 @@ const postData = async (endpoint, body, headers = {}) => {
     return handleResponse(response);
 };
 
-export { getData, postData };
+const deleteData = async (endpoint, headers = {}) => {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            ...headers
+        },
+    });
+
+    return handleResponse(response);
+};
+
+export { getData, postData, deleteData };

@@ -1,4 +1,4 @@
-import { login } from '/lib/api.js';
+import { login } from '../lib/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
@@ -24,7 +24,7 @@ async function handleLoginSubmit(e) {
 
     if (response.token) {
       localStorage.setItem('userToken', response.token);
-      window.location.href = '/index.html';
+      window.location.href = './index.html';
     } else {
       // alert only the error message from server
       alert(response.error || 'Login failed.');

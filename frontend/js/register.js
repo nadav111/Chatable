@@ -1,4 +1,4 @@
-import { register } from '/lib/api.js';
+import { register } from '../lib/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('registerForm');
@@ -34,7 +34,7 @@ async function handleRegisterSubmit(e) {
 
     if (response.token) {
       alert('Registration successful! Please login.');
-      window.location.href = '/login.html';
+      window.location.href = './login.html';
     } else {
       alert(response.error || 'Registration failed.');
       setButtonLoading(registerBtn, false);

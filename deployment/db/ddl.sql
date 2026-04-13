@@ -37,3 +37,19 @@ CREATE TABLE IF NOT EXISTS "Messages" (
 -- Index for faster queries by chat and creation time
 CREATE INDEX IF NOT EXISTS idx_messages_chat_created 
 ON "Messages"("chatId", "createdAt");
+
+-- Friends table for friend relationships
+CREATE TABLE IF NOT EXISTS "Friends" (
+    id SERIAL PRIMARY KEY,
+    "requesterId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    "addresseeId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, accepted, blocked
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE("requesterId", "addresseeId")
+);
+
+-- Index for faster friend queries
+CREATE INDEX IF NOT EXISTS idx_friends_requester ON "Friends"("requesterId");
+CREATE INDEX IF NOT EXISTS idx_friends_addressee ON "Friends"("addresseeId");
+CREATE INDEX IF NOT EXISTS idx_friends_status ON "Friends"(status);

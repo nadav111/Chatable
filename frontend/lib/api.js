@@ -1,4 +1,4 @@
-import { postData, getData } from './apiClient.js';
+import { postData, getData, deleteData } from './apiClient.js';
 
 const login = async (username, password) => {
     return postData('/home/login', { username, password });
@@ -39,4 +39,40 @@ const getUserByToken = async (token) => {
     });
 }
 
-export { login, register, sendMessage, getMessages, getChats, createChat, getUserByToken };
+const sendFriendRequest = async (token, username) => {
+    return postData('/friends/request', { username }, {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+const getFriendRequests = async (token) => {
+    return getData('/friends/requests', {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+const respondToFriendRequest = async (token, friendId, action) => {
+    return postData('/friends/respond', { friendId, action }, {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+const getFriends = async (token) => {
+    return getData('/friends', {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+const removeFriend = async (token, friendId) => {
+    return deleteData(`/friends/${friendId}`, {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+const searchUsers = async (token, query) => {
+    return getData(`/friends/search?q=${encodeURIComponent(query)}`, {
+        'Authorization': `Bearer ${token}`
+    });
+};
+
+export { login, register, sendMessage, getMessages, getChats, createChat, getUserByToken, sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };
