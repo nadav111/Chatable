@@ -3,6 +3,7 @@ import { getChats, createChat } from "../services/chat.service.js";
 const handleGetChats = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+
     if (!token) {
       return res.status(401).json({ error: 'Missing authorization token' });
     }
@@ -19,12 +20,12 @@ const handleGetChats = async (req, res) => {
 const handleCreateChat = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+
     if (!token) {
       return res.status(401).json({ error: 'Missing authorization token' });
     }
-    const { username } = req.body;
 
-    const chat = await createChat(token, username);
+    const chat = await createChat(token, req.body.participants);
 
     res.status(201).json(chat);
 

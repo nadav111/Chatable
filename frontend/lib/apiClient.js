@@ -1,15 +1,15 @@
 // Determine BASE_URL based on environment
 const getBaseUrl = () => {
-    // In production (deployed), use chatable.local/api
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-        return 'http://chatable.local/api';
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname.startsWith('192.168') || hostname.startsWith('10.')) {
+        return 'http://localhost:3000/api';
     }
-    // In development, use localhost:3000
-    return 'http://localhost:3000';
+    
+    return `http://${hostname}:3000/api`;
 };
 
 const BASE_URL = getBaseUrl();
-console.log(`API Client initialized with BASE_URL: ${BASE_URL}`);
 
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);

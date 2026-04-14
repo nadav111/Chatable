@@ -1,4 +1,5 @@
 import { login } from '../lib/api.js';
+import { showError, showWarning } from "../lib/toast.js";
 
 document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
@@ -13,7 +14,7 @@ async function handleLoginSubmit(e) {
   const loginBtn = document.querySelector('.login-btn');
 
   if (!username || password.length < 4) {
-    alert('Username or password is invalid.');
+    showWarning('Username or password is invalid.');
     return;
   }
 
@@ -22,17 +23,11 @@ async function handleLoginSubmit(e) {
   try {
     const response = await login(username, password);
 
-    if (response.token) {
-      localStorage.setItem('userToken', response.token);
-      window.location.href = './index.html';
-    } else {
-      // alert only the error message from server
-      alert(response.error || 'Login failed.');
-      setButtonLoading(loginBtn, false);
-    }
+    localStorage.setItem('userToken', response.token);
+    window.location.href = './index.html';
   } catch (err) {
     console.error('Login error:', err);
-    alert(err.message || 'Server error. Try again later.');
+    showError(err.message || 'Server error. Try again later.');
     setButtonLoading(loginBtn, false);
   }
 }

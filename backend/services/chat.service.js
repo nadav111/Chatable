@@ -1,14 +1,10 @@
-import jwt from "jsonwebtoken";
 import { pool } from "../db/db.connection.js";
+import { getUserIdByToken } from "./home.service.js";
 
 const getChats = async (token) => {
-  if (!token) {
-    throw new Error("No token provided");
-  }
+  const userId = await getUserIdByToken(token);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     const result = await pool.query(`
       SELECT c.id, c.title, c."createdAt", c."updatedAt",
              json_agg(json_build_object('id', u.id, 'username', u.username, 'email', u.email)) as participants
@@ -19,7 +15,7 @@ const getChats = async (token) => {
         SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $1
       )
       GROUP BY c.id, c.title, c."createdAt", c."updatedAt"
-    `, [decoded.id]);
+    `, [userId]);
 
     return result.rows;
   } catch (err) {
@@ -28,67 +24,125 @@ const getChats = async (token) => {
   }
 };
 
-const createChat = async (token, username) => {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const currentUserId = decoded.id;
+const createChat = async (token, participantsUsernames) => {
+  const userId = await getUserIdByToken(token);
 
-  try {
-    const otherUserResult = await pool.query(
-      'SELECT id FROM "Users" WHERE username = $1',
-      [username]
-    );
+  if (!participantsUsernames || !Array.isArray(participantsUsernames) || participantsUsernames.length === 0) {
+    throw new Error("Participants must be a non-empty array of usernames");
+  }
 
-    if (otherUserResult.rows.length === 0) {
-      throw new Error("User not found");
+  try {   
+    let participantsId = getParticipantIdsByUsernames(userId, participantsUsernames);
+
+    if (participantsId.length === 0) {
+      throw new Error("No valid participants provided");
+    } else if (participantsId.length === 1) {
+      const existingChat = await isDirectChatExists(userId, participantsId[0]);
+      
+      if (existingChat) {
+        return existingChat;
+      } else {
+        return await createDirectChat(userId, participantsId[0]);
+      }
     }
 
-    const otherUserId = otherUserResult.rows[0].id;
-
-    if (otherUserId === currentUserId) {
-      throw new Error("Cannot create chat with yourself");
-    }
-
-    // Check if chat already exists
-    const existingChatResult = await pool.query(`
-      SELECT c.id FROM "Chats" c
-      WHERE c.id IN (
-        SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $1
-      )
-      AND c.id IN (
-        SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $2
-      )
-      LIMIT 1
-    `, [currentUserId, otherUserId]);
-
-    if (existingChatResult.rows.length > 0) {
-      return { id: existingChatResult.rows[0].id };
-    }
-
-    // Create new chat
-    const otherUserResult2 = await pool.query(
-      'SELECT username FROM "Users" WHERE id = $1',
-      [otherUserId]
-    );
-
-    const chatTitle = `${otherUserResult2.rows[0].username} & You`;
-
-    const chatResult = await pool.query(
-      'INSERT INTO "Chats" (title) VALUES ($1) RETURNING id, title',
-      [chatTitle]
-    );
-
-    const chatId = chatResult.rows[0].id;
-
-    // Add participants
-    await pool.query(
-      'INSERT INTO "ChatParticipants" ("chatId", "userId") VALUES ($1, $2), ($1, $3)',
-      [chatId, currentUserId, otherUserId]
-    );
-
-    return { id: chatId, title: chatTitle };
+    participantsId.push(userId);
+    
+    return await createGroupChat(participantsId);
   } catch (err) {
+    console.error("Failed to create chat:", err);
     throw err;
   }
 };
 
-export { getChats, createChat };
+const getParticipantIdsByUsernames = async (userId, participantUsernames) => {
+  let participantIds = [];
+
+  for (const username of participantUsernames) {
+    const user = await pool.query(
+    'SELECT id FROM "Users" WHERE username = $1',
+    [username]);
+
+      if (user.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const participantId = user.rows[0].id;
+    
+    if (userId === participantId) {
+      throw new Error("Cannot create chat with yourself");
+    }
+
+    participantIds.push(participantId);
+  }
+
+  return participantIds;
+};
+
+const isDirectChatExists = async (userId1, userId2) => {
+  const [u1, u2] =
+    userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+
+  const result = await pool.query(
+    `
+    SELECT c.id
+    FROM "Chats" c
+    JOIN "ChatParticipants" cp1 ON cp1."chatId" = c.id
+    JOIN "ChatParticipants" cp2 ON cp2."chatId" = c.id
+    WHERE c.type = 'direct'
+      AND cp1."userId" = $1
+      AND cp2."userId" = $2
+    LIMIT 1
+    `,
+    [u1, u2]
+  );
+
+  return result.rows[0] ? { id: result.rows[0].id } : null;
+};
+
+const createDirectChat = async (userId1, userId2) => {
+  const [u1, u2] =
+    userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+
+  // Create chat
+  const chatResult = await pool.query(
+    `
+    INSERT INTO "Chats" (type)
+    VALUES ('direct')
+    RETURNING id
+    `
+  );
+
+  const chatId = chatResult.rows[0].id;
+
+  // Add participants
+  await pool.query(
+    `
+    INSERT INTO "ChatParticipants" ("chatId", "userId")
+    VALUES ($1, $2), ($1, $3)
+    `,
+    [chatId, u1, u2]
+  );
+
+  return { id: chatId };
+};
+
+const createGroupChat = async (participantIds) => {
+  const chatResult = await pool.query(
+    'INSERT INTO "Chats" (type) VALUES ($1) RETURNING id',
+    ['group']
+  );
+  const chatId = chatResult.rows[0].id;
+
+  // Add participants
+  const values = participantIds.map((id, index) => `($1, $${index + 2})`).join(', ');
+
+  const addParticipantsToChat = await pool.query(
+    `INSERT INTO "ChatParticipants" ("chatId", "userId") VALUES ${values}`,
+    [chatId, ...participantIds]
+  );
+
+  return { id: chatId };
+};
+
+export { getChats, createChat }

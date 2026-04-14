@@ -33,11 +33,11 @@ const createChat = async (token, username) => {
     });
 };
 
-const getUserByToken = async (token) => {
+const getUserProfile = async (token) => {
     return getData('/home/profile', {
         'Authorization': `Bearer ${token}`
     });
-}
+};
 
 const sendFriendRequest = async (token, username) => {
     return postData('/friends/request', { username }, {
@@ -75,4 +75,4 @@ const searchUsers = async (token, query) => {
     });
 };
 
-export { login, register, sendMessage, getMessages, getChats, createChat, getUserByToken, sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };
+export { login, register, sendMessage, getMessages, getChats, createChat, getUserProfile, sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };

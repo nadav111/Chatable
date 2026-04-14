@@ -1,11 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/db.connection.js';
+import { getUserIdByToken } from './home.service.js';
 
-const sendMessage = async (data) => {
-  const { token, message, chatId } = data;
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const senderId = decoded.id;
+const sendMessage = async (token, message, chatId) => {
+  const senderId = await getUserIdByToken(token);
 
   try {
     // Check if chat exists
@@ -38,16 +36,8 @@ const sendMessage = async (data) => {
   }
 };
 
-const getMessages = async (data) => {
-  const { token, chatId } = data;
-
-  let senderId;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    senderId = decoded.id;
-  } catch (err) {
-    throw new Error('Invalid or expired token');
-  }
+const getMessages = async (token, chatId) => {
+  const senderId = await getUserIdByToken(token);
 
   try {
     // Check if chat exists

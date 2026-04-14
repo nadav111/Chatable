@@ -1,55 +1,41 @@
--- Users table
+-- Users: stores account credentials
 CREATE TABLE IF NOT EXISTS "Users" (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Chats table
+-- Chats: stores all chats (direct or group)
 CREATE TABLE IF NOT EXISTS "Chats" (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group')),
+    title VARCHAR(255),
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ChatParticipants table
+-- ChatParticipants: which users are in which chat
 CREATE TABLE IF NOT EXISTS "ChatParticipants" (
     id SERIAL PRIMARY KEY,
-    "chatId" INTEGER NOT NULL REFERENCES "Chats"(id) ON DELETE CASCADE,
-    "userId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
-    UNIQUE("chatId", "userId")
+    "chatId" INTEGER REFERENCES "Chats"(id) ON DELETE CASCADE,
+    "userId" INTEGER REFERENCES "Users"(id) ON DELETE CASCADE
 );
 
--- Messages table
+-- Messages: chat messages
 CREATE TABLE IF NOT EXISTS "Messages" (
     id SERIAL PRIMARY KEY,
-    "chatId" INTEGER NOT NULL REFERENCES "Chats"(id) ON DELETE CASCADE,
-    sender INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    "chatId" INTEGER REFERENCES "Chats"(id) ON DELETE CASCADE,
+    "senderId" INTEGER REFERENCES "Users"(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for faster queries by chat and creation time
-CREATE INDEX IF NOT EXISTS idx_messages_chat_created 
-ON "Messages"("chatId", "createdAt");
-
--- Friends table for friend relationships
+-- Friends: friend relationships
 CREATE TABLE IF NOT EXISTS "Friends" (
     id SERIAL PRIMARY KEY,
-    "requesterId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
-    "addresseeId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, accepted, blocked
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE("requesterId", "addresseeId")
+    "user1" INTEGER REFERENCES "Users"(id) ON DELETE CASCADE,
+    "user2" INTEGER REFERENCES "Users"(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'pending',
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Index for faster friend queries
-CREATE INDEX IF NOT EXISTS idx_friends_requester ON "Friends"("requesterId");
-CREATE INDEX IF NOT EXISTS idx_friends_addressee ON "Friends"("addresseeId");
-CREATE INDEX IF NOT EXISTS idx_friends_status ON "Friends"(status);

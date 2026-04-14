@@ -53,7 +53,7 @@
             <div class="nav-tabs">
                 <button id="chatsTab" class="nav-tab active">
                     <span class="material-icons">chat</span>
-                    <span class="tab-text">Chats</span>
+                    <span class="tab-text">Groups</span>
                 </button>
                 <button id="friendsTab" class="nav-tab">
                     <span class="material-icons">people</span>
@@ -65,7 +65,7 @@
             <div class="action-buttons">
                 <button id="add-chat" class="primary-btn">
                     <span class="material-icons">add</span>
-                    <span>New Chat</span>
+                    <span>New Group</span>
                 </button>
                 <button id="add-friend" class="secondary-btn hidden">
                     <span class="material-icons">person_add</span>
@@ -77,7 +77,7 @@
             <div class="content-area">
                 <div id="chat-list" class="list-container">
                     <div class="list-header">
-                        <h3>Recent Chats</h3>
+                        <h3>Recent Groups</h3>
                     </div>
                     <div class="list-content">
                         <!-- Chats will be loaded here -->
@@ -104,10 +104,10 @@
                         <span class="material-icons">chat_bubble_outline</span>
                     </div>
                     <h2>Welcome to Chatable!</h2>
-                    <p>Select a chat to start messaging or create a new conversation.</p>
+                    <p>Select a group to start messaging or create a new conversation.</p>
                     <button id="emptyStateAction" class="primary-btn">
                         <span class="material-icons">add</span>
-                        Start a Chat
+                        Start a Group
                     </button>
                 </div>
             </div>
@@ -175,21 +175,23 @@
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Create New Chat</h2>
+                <h2>Create New Group</h2>
                 <button id="closeModalBtn" class="modal-close">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <label for="chatUserInput">Username</label>
-                    <input type="text" id="chatUserInput" placeholder="Enter username to chat with">
-                    <span class="input-hint">Start a conversation with anyone</span>
+                    <label>Select Friends</label>
+                    <div id="friendsList" class="friends-selection-list">
+                        <!-- Friends will be loaded here -->
+                    </div>
+                    <span class="input-hint">Choose friends to add to your group</span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button id="cancelChatBtn" class="secondary-btn">Cancel</button>
-                <button id="createChatBtn" class="primary-btn" disabled>Create Chat</button>
+                <button id="createChatBtn" class="primary-btn" disabled>Create Group</button>
             </div>
         </div>
     </div>

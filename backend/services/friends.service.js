@@ -1,89 +1,104 @@
 import { pool } from '../db/db.connection.js';
+import { getUserIdByToken } from './home.service.js';
 
-const sendFriendRequest = async (requesterId, addresseeUsername) => {
-  // Get addressee user
-  const addresseeResult = await pool.query('SELECT id FROM "Users" WHERE username = $1', [addresseeUsername]);
-  if (addresseeResult.rows.length === 0) {
-    throw new Error('User not found');
-  }
-  const addresseeId = addresseeResult.rows[0].id;
+const searchUsers = async (token, query) => {
+  const userId = await getUserIdByToken(token);
 
-  // Check if already friends or request exists
-  const existingResult = await pool.query(
-    'SELECT status FROM "Friends" WHERE ("requesterId" = $1 AND "addresseeId" = $2) OR ("requesterId" = $2 AND "addresseeId" = $1)',
-    [requesterId, addresseeId]
+  const result = await pool.query(
+    'SELECT id, username FROM "Users" WHERE username ILIKE $1 AND id != $2 LIMIT 20',
+    [`%${query}%`, userId]
+  );
+  return result.rows;
+};
+
+const sendFriendRequest = async (token, targetUsername) => {
+  const userId = await getUserIdByToken(token);
+
+  const userResult = await pool.query(
+    'SELECT id FROM "Users" WHERE username = $1',
+    [targetUsername]
   );
 
-  if (existingResult.rows.length > 0) {
-    const status = existingResult.rows[0].status;
-    if (status === 'accepted') {
-      throw new Error('Already friends');
-    } else if (status === 'pending') {
-      throw new Error('Friend request already sent');
-    }
+  if (userResult.rows.length === 0) {
+    throw new Error('User not found');
   }
 
-  // Prevent self-friend request
-  if (requesterId === addresseeId) {
+  const receiverId = userResult.rows[0].id;
+
+  if (userId === receiverId) {
     throw new Error('Cannot send friend request to yourself');
   }
 
-  // Create friend request
-  const result = await pool.query(
-    'INSERT INTO "Friends" ("requesterId", "addresseeId") VALUES ($1, $2) RETURNING *',
-    [requesterId, addresseeId]
+  const existingConnection = await pool.query(
+    'SELECT * FROM "Friends" WHERE ("firstUserId" = $1 AND "secondUserId" = $2) OR ("firstUserId" = $2 AND "secondUserId" = $1)',
+    [userId, receiverId]
   );
 
-  return result.rows[0];
-};
-
-const getFriendRequests = async (userId) => {
-  const result = await pool.query(`
-    SELECT f.id, f.status, f."createdAt",
-           u.username, u.email,
-           CASE WHEN f."requesterId" = $1 THEN 'sent' ELSE 'received' END as direction
-    FROM "Friends" f
-    JOIN "Users" u ON (CASE WHEN f."requesterId" = $1 THEN f."addresseeId" ELSE f."requesterId" END = u.id)
-    WHERE (f."requesterId" = $1 OR f."addresseeId" = $1) AND f.status = 'pending'
-    ORDER BY f."createdAt" DESC
-  `, [userId]);
-
-  return result.rows;
-};
-
-const respondToFriendRequest = async (userId, friendId, action) => {
-  // action can be 'accept' or 'decline'
-  const status = action === 'accept' ? 'accepted' : 'declined';
-
-  const result = await pool.query(
-    'UPDATE "Friends" SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2 AND "addresseeId" = $3 RETURNING *',
-    [status, friendId, userId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new Error('Friend request not found or not authorized');
+  if (existingConnection.rows.length > 0) {
+    throw new Error('Friend request or connection already exists');
   }
 
+  const result = await pool.query(
+    'INSERT INTO "Friends" ("firstUserId", "secondUserId", status) VALUES ($1, $2, \'pending\') RETURNING *',
+    [Math.min(userId, receiverId), Math.max(userId, receiverId)]
+  );
+
   return result.rows[0];
 };
 
-const getFriends = async (userId) => {
-  const result = await pool.query(`
-    SELECT u.id, u.username, u.email,
-           f."createdAt" as friends_since,
-           CASE WHEN u.id = f."requesterId" THEN f."addresseeId" ELSE f."requesterId" END as friend_id
-    FROM "Friends" f
-    JOIN "Users" u ON (CASE WHEN f."requesterId" = $1 THEN f."addresseeId" ELSE f."requesterId" END = u.id)
-    WHERE (f."requesterId" = $1 OR f."addresseeId" = $1) AND f.status = 'accepted'
-    ORDER BY u.username
-  `, [userId]);
+const getFriendRequests = async (token) => {
+  const userId = await getUserIdByToken(token);
+
+  const result = await pool.query(
+    'SELECT f.id, f."firstUserId" as "senderId", u.username, u.id as "userId", f.status, f."createdAt", \'received\' as direction FROM "Friends" f JOIN "Users" u ON f."firstUserId" = u.id WHERE f."secondUserId" = $1 AND f.status = \'pending\' ORDER BY f."createdAt" DESC',
+    [userId]
+  );
 
   return result.rows;
 };
 
-const removeFriend = async (userId, friendId) => {
+const respondToFriendRequest = async (token, requestId, action) => {
+  const userId = await getUserIdByToken(token);
+
+  const requestResult = await pool.query(
+    'SELECT * FROM "Friends" WHERE id = $1 AND "secondUserId" = $2 AND status = \'pending\'',
+    [requestId, userId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    throw new Error('Friend request not found');
+  }
+
+  if (action === 'accept') {
+    await pool.query(
+      'UPDATE "Friends" SET status = \'accepted\', "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1',
+      [requestId]
+    );
+  } else if (action === 'decline') {
+    await pool.query(
+      'DELETE FROM "Friends" WHERE id = $1',
+      [requestId]
+    );
+  }
+
+  return { success: true, action };
+};
+
+const getFriends = async (token) => {
+  const userId = await getUserIdByToken(token);
+
   const result = await pool.query(
-    'DELETE FROM "Friends" WHERE ((requesterId = $1 AND addresseeId = $2) OR (requesterId = $2 AND addresseeId = $1)) AND status = \'accepted\'',
+    'SELECT u.id, u.username FROM "Friends" f JOIN "Users" u ON (f."firstUserId" = u.id OR f."secondUserId" = u.id) WHERE (f."firstUserId" = $1 OR f."secondUserId" = $1) AND f.status = \'accepted\' AND u.id != $1',
+    [userId]
+  );
+  return result.rows;
+};
+
+const removeFriend = async (token, friendId) => {
+  const userId = await getUserIdByToken(token);
+  
+  const result = await pool.query(
+    'DELETE FROM "Friends" WHERE ((("firstUserId" = $1 AND "secondUserId" = $2) OR ("firstUserId" = $2 AND "secondUserId" = $1)) AND status = \'accepted\')',
     [userId, friendId]
   );
 
@@ -91,17 +106,7 @@ const removeFriend = async (userId, friendId) => {
     throw new Error('Friend relationship not found');
   }
 
-  return { message: 'Friend removed successfully' };
-};
-
-const searchUsers = async (query, currentUserId) => {
-  const result = await pool.query(`
-    SELECT id, username, email FROM "Users"
-    WHERE username ILIKE $1 AND id != $2
-    LIMIT 10
-  `, [`%${query}%`, currentUserId]);
-
-  return result.rows;
+  return { success: true };
 };
 
 export { sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };
