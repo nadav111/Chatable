@@ -38,10 +38,14 @@ class UIManager {
         document.getElementById("cancelChatBtn").addEventListener("click", () => this.closeGroupModal());
         document.getElementById("createChatBtn").addEventListener("click", async () => {
             const participants = FriendManager.getSelectedFriendsUsernames();
+            const groupName = document.getElementById("groupNameInput").value.trim();
 
-            console.log("Selected participants for group:", participants);
+            if (!groupName) {
+                showWarning("Please enter a group name.");
+                return;
+            }
 
-            await ChatManager.createGroup(participants);
+            await ChatManager.createGroup(participants, groupName);
             this.closeGroupModal();
         });
 
@@ -67,14 +71,18 @@ class UIManager {
 
     async openGroupModal() {
         document.getElementById("addChatModal").classList.remove("hidden");
+        document.getElementById("groupNameInput").addEventListener("input", 
+            () => FriendManager.updateCreateButton()
+        );
         await FriendManager.loadFriendsForGroupCreation();
     }
 
     closeGroupModal() {
         document.getElementById("addChatModal").classList.add("hidden");
         document.getElementById("friendsList").innerHTML = "";
+        document.getElementById("groupNameInput").value = "";
     }
-
+    
     openFriendModal() {
         document.getElementById("addFriendModal").classList.remove("hidden");
         document.getElementById("friendSearchInput").focus();

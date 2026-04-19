@@ -102,15 +102,20 @@ class ChatManager {
         }
     }
 
-    async createGroup(participantsUsernames) {
+    async createGroup(participantsUsernames, groupName) {
         if (!participantsUsernames.length) {
             showWarning("Select at least one friend.");
-            
+
+            return;
+        }
+
+        if (!groupName) {
+            showWarning("Please enter a group name.");
             return;
         }
 
         try {
-            await createChat(state.getToken(), participantsUsernames);
+            await createChat(state.getToken(), participantsUsernames, groupName);
             showSuccess("Group created!");
             await this.loadChats();
         } catch {

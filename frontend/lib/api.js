@@ -27,8 +27,8 @@ const getChats = async (token) => {
     });
 };
 
-const createChat = async (token, participants) => {
-    return postData('/chats/create', { participants }, {
+const createChat = async (token, participants, groupName) => {
+    return postData('/chats/create', { participants, groupName }, {
         'Authorization': `Bearer ${token}` 
     });
 };

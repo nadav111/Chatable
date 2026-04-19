@@ -89,7 +89,7 @@ class FriendManager {
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.value = friend.username; // was friend.id
+        checkbox.value = friend.username;
         checkbox.style.marginRight = "8px";
         checkbox.addEventListener("change", this.updateCreateButton);
 
@@ -103,9 +103,10 @@ class FriendManager {
 
     updateCreateButton() {
         const checked = document.querySelectorAll("#friendsList input[type='checkbox']:checked").length;
-        document.getElementById("createChatBtn").disabled = checked === 0;
+        const hasName = document.getElementById("groupNameInput")?.value.trim().length > 0;
+        document.getElementById("createChatBtn").disabled = checked === 0 || !hasName;
     }
-
+    
     getSelectedFriendsUsernames() {
         const checkboxes = document.querySelectorAll("#friendsList input[type='checkbox']:checked");
         return Array.from(checkboxes).map((cb) => cb.value);

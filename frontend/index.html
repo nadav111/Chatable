@@ -182,11 +182,12 @@
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <label>Select Friends</label>
-                    <div id="friendsList" class="friends-selection-list">
-                        <!-- Friends will be loaded here -->
-                    </div>
-                    <span class="input-hint">Choose friends to add to your group</span>
+                    <label for="groupNameInput">Group Name</label>
+                    <input type="text" id="groupNameInput" placeholder="e.g. Project Team, Friends..." maxlength="50">
+                </div>
+                <div class="input-group">
+                    <label>Add Friends <span id="selectedCount" style="font-weight:400; opacity:0.6">(0 selected)</span></label>
+                    <div id="friendsList" class="friends-selection-list"></div>
                 </div>
             </div>
             <div class="modal-footer">

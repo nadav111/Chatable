@@ -19,7 +19,7 @@ const getChats = async (token) => {
     return result.rows;
 };
 
-const createChat = async (token, participantUsernames) => {
+const createChat = async (token, participantUsernames, groupName) => {
     const userId = await getUserIdByToken(token);
 
     if (!Array.isArray(participantUsernames) || participantUsernames.length === 0) {
@@ -34,7 +34,7 @@ const createChat = async (token, participantUsernames) => {
         return await createDirectChat(userId, participantIds[0]);
     }
 
-    return await createGroupChat([userId, ...participantIds]);
+    return await createGroupChat([userId, ...participantIds], groupName);
 };
 
 const getParticipantIdsByUsernames = async (userId, usernames) => {
@@ -87,17 +87,17 @@ const createDirectChat = async (userId1, userId2) => {
     return { id: chatId };
 };
 
-const createGroupChat = async (participantIds) => {
+const createGroupChat = async (participantIds, groupName) => {
     const { rows } = await pool.query(
-        `INSERT INTO "Chats" (type) VALUES ('group') RETURNING id`
+        `INSERT INTO "Chats" (type, title) VALUES ('group', $1) RETURNING id`,
+        [groupName]
     );
     const chatId = rows[0].id;
 
-    const values = participantIds.map((_, i) => `($1, $${i + 2})`).join(", ");
-
     await pool.query(
-        `INSERT INTO "ChatParticipants" ("chatId", "userId") VALUES ${values}`,
-        [chatId, ...participantIds]
+        `INSERT INTO "ChatParticipants" ("chatId", "userId")
+         SELECT $1, UNNEST($2::int[])`,
+        [chatId, participantIds]
     );
 
     return { id: chatId };

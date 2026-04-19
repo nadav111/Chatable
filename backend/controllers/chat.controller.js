@@ -33,7 +33,7 @@ const handleCreateChat = async (req, res, next) => {
       throw err;
     }
 
-    const chat = await createChat(token, req.body.participants);
+    const chat = await createChat(token, req.body.participants, req.body.groupName);
 
     res.status(201).json(chat);
   } catch (err) {
