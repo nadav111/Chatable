@@ -37,8 +37,11 @@ class UIManager {
         document.getElementById("closeModalBtn").addEventListener("click", () => this.closeGroupModal());
         document.getElementById("cancelChatBtn").addEventListener("click", () => this.closeGroupModal());
         document.getElementById("createChatBtn").addEventListener("click", async () => {
-            const friendIds = FriendManager.getSelectedFriendIds();
-            await ChatManager.createGroup(friendIds);
+            const participants = FriendManager.getSelectedFriendsUsernames();
+
+            console.log("Selected participants for group:", participants);
+
+            await ChatManager.createGroup(participants);
             this.closeGroupModal();
         });
 

@@ -1,35 +1,26 @@
 // errorMiddleware.js
 const errorMiddleware = (err, req, res, next) => {
   console.error(err); // log the error for debugging
+ 
+  const msg = err.message || "Server Error";
+  console.log("Error message:", msg);
 
-  // Mongoose validation error
-  if (err.name === "ValidationError") {
-    const messages = Object.values(err.errors).map(val => val.message);
-    return res.status(400).json({
+   if (err.status === 401) {
+    return res.status(401).json({
       success: false,
-      error: messages
+      error: err.message || "Unauthorized"
     });
   }
 
-  // Mongoose duplicate key error
-  if (err.code && err.code === 11000) {
-    const field = Object.keys(err.keyValue);
-    return res.status(400).json({
+  if (msg.includes("not found")) {
+    return res.status(404).json({
       success: false,
-      error: `Duplicate value for field: ${field}`
-    });
-  }
-
-  // Mongoose cast error (invalid ObjectId, etc.)
-  if (err.name === "CastError") {
-    return res.status(400).json({
-      success: false,
-      error: `Invalid ${err.path}: ${err.value}`
+      error: msg
     });
   }
 
   // Default to 500 server error
-  res.status(err.status || 500).json({
+  return res.status(err.status || 500).json({
     success: false,
     error: err.message || "Server Error"
   });

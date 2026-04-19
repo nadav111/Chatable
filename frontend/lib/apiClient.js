@@ -14,6 +14,12 @@ const BASE_URL = getBaseUrl();
 const handleResponse = async (response) => {
     const data = await response.json().catch(() => null);
 
+    if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = './login.html';
+        return;
+    }
+
     if (!response.ok) {
         const errorMessage = data?.error || data?.message || 'Something went wrong';
         throw new Error(errorMessage);

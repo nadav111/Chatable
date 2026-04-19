@@ -1,25 +1,40 @@
-import { sendMessage, getMessages } from '../services/messages.service.js';
+import { sendMessage, loadMessages } from '../services/messages.service.js';
 
-const handleSendMessage = async (req, res) => {
+// Extract token
+const getToken = (req) => req.headers.authorization?.split(' ')[1];
+
+// SEND MESSAGE
+const handleSendMessage = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        const message = await sendMessage(token, req.body.message, req.body.chatId);
+        const token = getToken(req);
+
+        const message = await sendMessage(
+            token,
+            req.body.message,
+            req.body.chatId
+        );
+
         res.status(201).json(message);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        next(err);
     }
 };
 
-const handleLoadMessages = async (req, res) => {
+// LOAD MESSAGES
+const handleLoadMessages = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        const chatId = req.body.chatId;
+        const token = getToken(req);
 
-        const messages = await getMessages(token, chatId);
+        const chatId = req.headers['chat-id'];
+
+        console.log("Loading messages for chatId:", chatId + " with token:", token);
+
+        const messages = await loadMessages(token, chatId);
+
         res.status(200).json(messages);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        next(err);
     }
 };
 
- export { handleSendMessage, handleLoadMessages };
+export { handleSendMessage, handleLoadMessages };

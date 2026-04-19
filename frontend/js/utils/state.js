@@ -2,7 +2,7 @@ export {
     sendMessage,
     getChats,
     createChat,
-    getMessages,
+    loadMessages,
     getUserProfile,
     sendFriendRequest,
     getFriendRequests,
@@ -17,4 +17,14 @@ export const state = {
     currentChatId: null,
     currentUser: null,
     getToken: () => localStorage.getItem("userToken"),
+};
+
+export const setCurrentChat = (chatId) => {
+    state.currentChatId = chatId;
+};
+
+export const loadChat = async (chatId) => {
+    state.currentChatId = chatId;
+    
+    return await loadMessages(chatId, state.getToken());
 };

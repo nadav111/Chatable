@@ -14,10 +14,10 @@ const sendMessage = async (token, message, chatId) => {
     });
 };
 
-const getMessages = async (token, chatId) => {
+const loadMessages = async (token, chatId) => {
     return getData('/messages/load', {
         'Authorization': `Bearer ${token}`,
-        'chat-id': chatId
+        'chat-id': chatId,
     });
 };
 
@@ -27,8 +27,8 @@ const getChats = async (token) => {
     });
 };
 
-const createChat = async (token, username) => {
-    return postData('/chats/create', { username }, {
+const createChat = async (token, participants) => {
+    return postData('/chats/create', { participants }, {
         'Authorization': `Bearer ${token}` 
     });
 };
@@ -75,4 +75,4 @@ const searchUsers = async (token, query) => {
     });
 };
 
-export { login, register, sendMessage, getMessages, getChats, createChat, getUserProfile, sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };
+export { login, register, sendMessage, loadMessages, getChats, createChat, getUserProfile, sendFriendRequest, getFriendRequests, respondToFriendRequest, getFriends, removeFriend, searchUsers };

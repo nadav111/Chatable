@@ -1,5 +1,6 @@
-import { getFriends, removeFriend, getFriendRequests, respondToFriendRequest, sendFriendRequest, searchUsers, state } from "../utils/state.js";
+import { getFriends, removeFriend, getFriendRequests, respondToFriendRequest, sendFriendRequest, searchUsers, state, setCurrentChat } from "../utils/state.js";
 import { showError, showSuccess } from "../../lib/toast.js";
+import ChatManager from "./ChatManager.js";
 
 class FriendManager {
     async loadFriends() {
@@ -22,19 +23,38 @@ class FriendManager {
     renderFriend(friend, list) {
         const item = document.createElement("div");
         item.className = "friend-item";
+
         item.innerHTML = `
             <div class="friend-info">
                 <div class="friend-avatar"></div>
-                <div class="friend-name">${friend.username}</div>
+                <div class="friend-details">
+                    <div class="friend-name">${friend.username}</div>
+                </div>
             </div>
-            <button class="remove-friend-btn">Remove</button>
+
+            <button class="remove-friend-btn" title="Remove friend">
+                <span class="material-icons">close</span>
+            </button>
         `;
-        item.querySelector(".remove-friend-btn").addEventListener("click", async () => {
-            await this.removeFriendHandler(friend.id);
+
+        item.querySelector(".remove-friend-btn").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const confirmed = await this.areYouSureModal(`Are you sure you want to remove ${friend.username} from your friends?`);
+            
+            if (confirmed) {
+                await this.removeFriendHandler(friend.id);
+            }
         });
+
+
+        item.addEventListener("click", () => {
+            console.log("Friend item clicked:", friend);
+            ChatManager.selectChat(friend.chatId, friend.username, item);
+        });
+
         list.appendChild(item);
     }
-
+    
     async removeFriendHandler(friendId) {
         try {
             await removeFriend(state.getToken(), friendId);
@@ -69,7 +89,7 @@ class FriendManager {
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.value = friend._id || friend.id;
+        checkbox.value = friend.username; // was friend.id
         checkbox.style.marginRight = "8px";
         checkbox.addEventListener("change", this.updateCreateButton);
 
@@ -86,7 +106,7 @@ class FriendManager {
         document.getElementById("createChatBtn").disabled = checked === 0;
     }
 
-    getSelectedFriendIds() {
+    getSelectedFriendsUsernames() {
         const checkboxes = document.querySelectorAll("#friendsList input[type='checkbox']:checked");
         return Array.from(checkboxes).map((cb) => cb.value);
     }
@@ -214,6 +234,57 @@ class FriendManager {
         } catch {
             showError("Failed to send request.");
         }
+    }
+
+    async areYouSureModal(message = "Are you sure?") {
+        return new Promise((resolve) => {
+            const modal = document.createElement("div");
+            modal.className = "modal";
+
+            modal.innerHTML = `
+                <div class="modal-overlay"></div>
+
+                <div class="modal-content" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <h2>Confirm</h2>
+                    </div>
+
+                    <div class="modal-body">
+                        <p style="color:#374151; font-size:14px;">
+                            ${message}
+                        </p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="secondary-btn cancel-btn">Cancel</button>
+                        <button class="primary-btn confirm-btn" style="background:#dc2626;">
+                            Yes, remove
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const close = () => {
+                modal.remove();
+            };
+
+            modal.querySelector(".cancel-btn").addEventListener("click", () => {
+                close();
+                resolve(false);
+            });
+
+            modal.querySelector(".modal-overlay").addEventListener("click", () => {
+                close();
+                resolve(false);
+            });
+
+            modal.querySelector(".confirm-btn").addEventListener("click", () => {
+                close();
+                resolve(true);
+            });
+        });
     }
 }
 
