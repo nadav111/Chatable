@@ -35,8 +35,6 @@ const handleGetUserProfile = async (req, res, next) => {
 
     const userProfile = await getUserProfile(token);
 
-    console.log("User profile:", userProfile);
-
     res.status(200).json(userProfile);
   } catch (err) {
     next(err);

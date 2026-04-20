@@ -2,38 +2,44 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../db/db.connection.js';
 import { getUserIdByToken } from './home.service.js';
 
-const sendMessage = async (token, message, chatId) => {
+const sendMessage = async (token, chatId, content) => {
   const senderId = await getUserIdByToken(token);
 
-  try {
-    // Check if chat exists
-    const chatResult = await pool.query(
-      'SELECT id FROM "Chats" WHERE id = $1',
-      [chatId]
-    );
+  const chatResult = await pool.query(
+    'SELECT id FROM "Chats" WHERE id = $1',
+    [chatId]
+  );
 
-    if (chatResult.rows.length === 0) {
-      throw new Error('Chat not found');
-    }
-
-    // Check if user is participant
-    const participantResult = await pool.query(
-      'SELECT id FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
-      [chatId, senderId]
-    );
-
-    if (participantResult.rows.length === 0) {
-      throw new Error('Unauthorized to send message in this chat');
-    }
-
-    // Insert message
-    await pool.query(
-      'INSERT INTO "Messages" ("chatId", "senderId", content) VALUES ($1, $2, $3)',
-      [chatId, senderId, message]
-    );
-  } catch (err) {
-    throw err;
+  if (chatResult.rows.length === 0) {
+    throw new Error('Chat not found');
   }
+
+  const participantResult = await pool.query(
+    'SELECT id FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
+    [chatId, senderId]
+  );
+
+  if (participantResult.rows.length === 0) {
+    throw new Error('Unauthorized to send message in this chat');
+  }
+
+  const result = await pool.query(
+    `INSERT INTO "Messages" ("chatId", "senderId", content)
+     VALUES ($1, $2, $3)
+     RETURNING id, "chatId", "senderId", content, "createdAt"`,
+    [chatId, senderId, content]
+  );
+
+  const message = result.rows[0];
+
+  const user = await pool.query(
+    'SELECT username FROM "Users" WHERE id = $1',
+    [senderId]
+  );
+
+  message.senderName = user.rows[0].username;
+
+  return message;
 };
 
 const loadMessages = async (token, chatId, limit = 50) => {

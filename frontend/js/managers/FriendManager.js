@@ -1,4 +1,5 @@
-import { getFriends, removeFriend, getFriendRequests, respondToFriendRequest, sendFriendRequest, searchUsers, state, setCurrentChat } from "../utils/state.js";
+import { state } from "../utils/state.js";
+import { getFriends, removeFriend, getFriendRequests, respondToFriendRequest, sendFriendRequest, searchUsers } from "../../lib/api.js";
 import { showError, showSuccess } from "../../lib/toast.js";
 import ChatManager from "./ChatManager.js";
 
@@ -48,7 +49,6 @@ class FriendManager {
 
 
         item.addEventListener("click", () => {
-            console.log("Friend item clicked:", friend);
             ChatManager.selectChat(friend.chatId, friend.username, item);
         });
 

@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="./css/home.css">
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
@@ -126,7 +128,7 @@
                         </div>
                     </div>
                     <div class="chat-actions">
-                        <button class="chat-action-btn" title="Chat Info">
+                        <button id="chatInfoBtn" class="chat-action-btn" title="Chat Info">
                             <span class="material-icons">info</span>
                         </button>
                         <button class="chat-action-btn" title="More Options">
@@ -171,6 +173,26 @@
     </div>
 
     <!-- Modals -->
+     <div id="chatInfoModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="chatInfoTitle">Chat Info</h2>
+                <button id="closeChatInfoModalBtn" class="modal-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Participants</label>
+                    <div id="chatParticipantsList" class="friends-selection-list">
+                        <!-- Participants will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="addChatModal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">

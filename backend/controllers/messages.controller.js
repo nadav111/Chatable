@@ -10,8 +10,8 @@ const handleSendMessage = async (req, res, next) => {
 
         const message = await sendMessage(
             token,
-            req.body.message,
-            req.body.chatId
+            req.body.chatId,
+            req.body.content
         );
 
         res.status(201).json(message);
@@ -24,11 +24,7 @@ const handleSendMessage = async (req, res, next) => {
 const handleLoadMessages = async (req, res, next) => {
     try {
         const token = getToken(req);
-
         const chatId = req.headers['chat-id'];
-
-        console.log("Loading messages for chatId:", chatId + " with token:", token);
-
         const messages = await loadMessages(token, chatId);
 
         res.status(200).json(messages);

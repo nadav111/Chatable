@@ -55,6 +55,12 @@ class UIManager {
         document.getElementById("friendSearchInput").addEventListener("input", (e) => {
             FriendManager.searchUsers(e.target.value.trim());
         });
+
+        // Chat info modal
+        document.getElementById("chatInfoBtn").addEventListener("click", () => ChatManager.openChatInfo());
+        document.getElementById("closeChatInfoModalBtn").addEventListener("click", () => {
+            document.getElementById("chatInfoModal").classList.add("hidden");
+        });
     }
 
     switchTab(tab) {
@@ -82,7 +88,7 @@ class UIManager {
         document.getElementById("friendsList").innerHTML = "";
         document.getElementById("groupNameInput").value = "";
     }
-    
+
     openFriendModal() {
         document.getElementById("addFriendModal").classList.remove("hidden");
         document.getElementById("friendSearchInput").focus();
