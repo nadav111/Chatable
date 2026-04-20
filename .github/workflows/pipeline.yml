@@ -99,7 +99,10 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             cd /opt/app/deployment
+            kubectl apply -f redis/
             kubectl apply -f backend/
             kubectl apply -f frontend/
+
+            kubectl rollout restart deployment redis
             kubectl rollout restart deployment backend-deployment
             kubectl rollout restart deployment frontend-deployment

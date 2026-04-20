@@ -31,5 +31,7 @@ spec:
                 secretKeyRef:
                   name: backend-secret
                   key: JWT_SECRET
+            - name: REDIS_URL
+              value: "redis://redis:6379"
       imagePullSecrets:
         - name: ghcr-secret
