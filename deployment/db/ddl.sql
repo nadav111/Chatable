@@ -1,39 +1,66 @@
--- Users table
+-- 1. Users table
 CREATE TABLE IF NOT EXISTS "Users" (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Chats table
+-- 2. Chats table
 CREATE TABLE IF NOT EXISTS "Chats" (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group')),
+    title VARCHAR(255), -- NULL for 'direct' types
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- ChatParticipants table
+-- 3. Friends table (Relationships linked to a Chat)
+CREATE TABLE IF NOT EXISTS "Friends" (
+    id SERIAL PRIMARY KEY,
+    "firstUserId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    "secondUserId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    "requesterId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    
+    -- The Direct Message Chat ID linked to this friendship
+    "chatId" INTEGER UNIQUE REFERENCES "Chats"(id) ON DELETE SET NULL, 
+    
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'blocked')),
+    
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    -- Logic: Ensure only one row exists per pair, and user1 < user2
+    CONSTRAINT unique_friend_pair UNIQUE ("firstUserId", "secondUserId"),
+    CONSTRAINT ordered_pair CHECK ("firstUserId" < "secondUserId")
+);
+
+-- 4. ChatParticipants table
 CREATE TABLE IF NOT EXISTS "ChatParticipants" (
     id SERIAL PRIMARY KEY,
     "chatId" INTEGER NOT NULL REFERENCES "Chats"(id) ON DELETE CASCADE,
     "userId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
-    UNIQUE("chatId", "userId")
+    "joinedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_participant UNIQUE ("chatId", "userId")
 );
 
--- Messages table
+-- 5. Messages table
 CREATE TABLE IF NOT EXISTS "Messages" (
     id SERIAL PRIMARY KEY,
     "chatId" INTEGER NOT NULL REFERENCES "Chats"(id) ON DELETE CASCADE,
-    sender INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    "senderId" INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for faster queries by chat and creation time
-CREATE INDEX IF NOT EXISTS idx_messages_chat_created 
-ON "Messages"("chatId", "createdAt");
+-- PERFORMANCE INDEXES --
+
+-- Get all chats for a specific user (Inbox view)
+CREATE INDEX idx_participants_user ON "ChatParticipants" ("userId");
+
+-- Fetch message history for a specific chat ordered by time
+CREATE INDEX idx_messages_chat_history ON "Messages" ("chatId", "createdAt" DESC);
+
+-- Fast lookup for friendship status between two users
+CREATE INDEX idx_friends_pair ON "Friends" ("firstUserId", "secondUserId");

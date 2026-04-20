@@ -1,17 +1,24 @@
 import express from "express";
 import dotenv from "dotenv";
+import http from "http";
+import cors from "cors";
+
 import connectDB from "./db/db.connection.js";
 import homeRouter from "./routers/home.router.js";
 import messagesRouter from "./routers/messages.router.js";
 import chatRouter from "./routers/chat.router.js";
+import friendsRouter from "./routers/friends.router.js";
 import errorMiddleware from "./middlewares/errorMiddleware.js";
-import cors from 'cors';
+
+import { initSocket } from "./socket/index.js";
 
 dotenv.config();
-await connectDB();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+
+// DB
+await connectDB();
 
 app.use(cors());
 
@@ -22,10 +29,17 @@ app.use(express.json());
 app.use("/api/home", homeRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/chats", chatRouter);
+app.use("/api/friends", friendsRouter);
 
 app.use(errorMiddleware);
 
+// HTTP server
+const server = http.createServer(app);
+
+// Socket.IO + Redis
+await initSocket(server);
+
 // Start server
-app.listen(port, () => {
+server.listen(port, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${port}`);
 });

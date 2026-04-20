@@ -10,7 +10,7 @@ const generateToken = (userId) => {
   );
 };
 
-const register = async ({ username, email, password }) => {
+const register = async (username, email, password) => {
   try {
     const existingUser = await pool.query(
       'SELECT id FROM "Users" WHERE email = $1',
@@ -37,7 +37,7 @@ const register = async ({ username, email, password }) => {
   }
 };
 
-const login = async ({ username, password }) => {
+const login = async (username, password) => {
   try {
     const result = await pool.query(
       'SELECT id, password FROM "Users" WHERE username = $1',

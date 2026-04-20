@@ -1,35 +1,43 @@
 import { getChats, createChat } from "../services/chat.service.js";
 
-const handleGetChats = async (req, res) => {
+// Extract token
+const getToken = (req) => req.headers.authorization?.split(" ")[1];
+
+// GET CHATS
+const handleGetChats = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token = getToken(req);
+
     if (!token) {
-      return res.status(401).json({ error: 'Missing authorization token' });
+      const err = new Error("Missing authorization token");
+      err.status = 401;
+      throw err;
     }
 
     const chats = await getChats(token);
 
     res.status(200).json(chats);
-
   } catch (err) {
-    res.status(401).json({ error: err.message });
+    next(err);
   }
 };
 
-const handleCreateChat = async (req, res) => {
+// CREATE CHAT
+const handleCreateChat = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: 'Missing authorization token' });
-    }
-    const { username } = req.body;
+    const token = getToken(req);
 
-    const chat = await createChat(token, username);
+    if (!token) {
+      const err = new Error("Missing authorization token");
+      err.status = 401;
+      throw err;
+    }
+
+    const chat = await createChat(token, req.body.participants, req.body.groupName);
 
     res.status(201).json(chat);
-
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    next(err);
   }
 };
 

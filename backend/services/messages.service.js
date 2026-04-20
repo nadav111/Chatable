@@ -1,85 +1,74 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/db.connection.js';
+import { getUserIdByToken } from './home.service.js';
 
-const sendMessage = async (data) => {
-  const { token, message, chatId } = data;
+const sendMessage = async (token, chatId, content) => {
+  const senderId = await getUserIdByToken(token);
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const senderId = decoded.id;
+  const chatResult = await pool.query(
+    'SELECT id FROM "Chats" WHERE id = $1',
+    [chatId]
+  );
 
-  try {
-    // Check if chat exists
-    const chatResult = await pool.query(
-      'SELECT id FROM "Chats" WHERE id = $1',
-      [chatId]
-    );
-
-    if (chatResult.rows.length === 0) {
-      throw new Error('Chat not found');
-    }
-
-    // Check if user is participant
-    const participantResult = await pool.query(
-      'SELECT id FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
-      [chatId, senderId]
-    );
-
-    if (participantResult.rows.length === 0) {
-      throw new Error('Unauthorized to send message in this chat');
-    }
-
-    // Insert message
-    await pool.query(
-      'INSERT INTO "Messages" ("chatId", sender, content) VALUES ($1, $2, $3)',
-      [chatId, senderId, message]
-    );
-  } catch (err) {
-    throw err;
+  if (chatResult.rows.length === 0) {
+    throw new Error('Chat not found');
   }
+
+  const participantResult = await pool.query(
+    'SELECT id FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
+    [chatId, senderId]
+  );
+
+  if (participantResult.rows.length === 0) {
+    throw new Error('Unauthorized to send message in this chat');
+  }
+
+  const result = await pool.query(
+    `INSERT INTO "Messages" ("chatId", "senderId", content)
+     VALUES ($1, $2, $3)
+     RETURNING id, "chatId", "senderId", content, "createdAt"`,
+    [chatId, senderId, content]
+  );
+
+  const message = result.rows[0];
+
+  const user = await pool.query(
+    'SELECT username FROM "Users" WHERE id = $1',
+    [senderId]
+  );
+
+  message.senderName = user.rows[0].username;
+
+  return message;
 };
 
-const getMessages = async (data) => {
-  const { token, chatId } = data;
+const loadMessages = async (token, chatId, limit = 50) => {
+  const userId = await getUserIdByToken(token);
 
-  let senderId;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    senderId = decoded.id;
-  } catch (err) {
-    throw new Error('Invalid or expired token');
-  }
+  const query = `
+    SELECT * FROM (
+        SELECT 
+          m.id, 
+          m."chatId", 
+          m."senderId", 
+          u.username AS "senderName",
+          m.content, 
+          m."createdAt"
+        FROM "Messages" m
+        JOIN "Users" u ON m."senderId" = u.id
+        WHERE m."chatId" = $1 
+          AND EXISTS (
+            SELECT 1 FROM "ChatParticipants" 
+            WHERE "chatId" = $1 AND "userId" = $2
+          )
+        ORDER BY m."createdAt" DESC -- Grab the LATEST 50 quickly
+        LIMIT $3
+    ) AS latest_msgs
+    ORDER BY "createdAt" ASC;
+  `;
 
-  try {
-    // Check if chat exists
-    const chatResult = await pool.query(
-      'SELECT id FROM "Chats" WHERE id = $1',
-      [chatId]
-    );
-
-    if (chatResult.rows.length === 0) {
-      throw new Error('Chat not found');
-    }
-
-    // Check if user is participant
-    const participantResult = await pool.query(
-      'SELECT id FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
-      [chatId, senderId]
-    );
-
-    if (participantResult.rows.length === 0) {
-      throw new Error('Unauthorized to view messages in this chat');
-    }
-
-    // Get messages
-    const messagesResult = await pool.query(
-      'SELECT id, "chatId", sender, content, "createdAt", "updatedAt" FROM "Messages" WHERE "chatId" = $1 ORDER BY "createdAt" ASC',
-      [chatId]
-    );
-
-    return messagesResult.rows;
-  } catch (err) {
-    throw err;
-  }
+  const result = await pool.query(query, [chatId, userId, limit]);
+  return result.rows; 
 };
 
-export { sendMessage, getMessages };
+export { sendMessage, loadMessages };

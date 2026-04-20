@@ -1,94 +1,106 @@
-import jwt from "jsonwebtoken";
 import { pool } from "../db/db.connection.js";
+import { getUserIdByToken } from "./home.service.js";
 
 const getChats = async (token) => {
-  if (!token) {
-    throw new Error("No token provided");
-  }
+    const userId = await getUserIdByToken(token);
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     const result = await pool.query(`
-      SELECT c.id, c.title, c."createdAt", c."updatedAt",
-             json_agg(json_build_object('id', u.id, 'username', u.username, 'email', u.email)) as participants
-      FROM "Chats" c
-      INNER JOIN "ChatParticipants" cp ON c.id = cp."chatId"
-      INNER JOIN "Users" u ON cp."userId" = u.id
-      WHERE c.id IN (
-        SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $1
-      )
-      GROUP BY c.id, c.title, c."createdAt", c."updatedAt"
-    `, [decoded.id]);
+        SELECT c.id, c.title, c.type,
+               json_agg(json_build_object('id', u.id, 'username', u.username)) AS participants
+        FROM "Chats" c
+        JOIN "ChatParticipants" cp ON c.id = cp."chatId"
+        JOIN "Users" u ON cp."userId" = u.id
+        WHERE c.id IN (
+            SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $1
+        )
+        GROUP BY c.id, c.title, c.type
+    `, [userId]);
 
     return result.rows;
-  } catch (err) {
-    console.error("Failed to get chats:", err);
-    throw new Error("Invalid or expired token");
-  }
 };
 
-const createChat = async (token, username) => {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const currentUserId = decoded.id;
+const createChat = async (token, participantUsernames, groupName) => {
+    const userId = await getUserIdByToken(token);
 
-  try {
-    const otherUserResult = await pool.query(
-      'SELECT id FROM "Users" WHERE username = $1',
-      [username]
-    );
-
-    if (otherUserResult.rows.length === 0) {
-      throw new Error("User not found");
+    if (!Array.isArray(participantUsernames) || participantUsernames.length === 0) {
+        throw new Error("Participants must be a non-empty array of usernames");
     }
 
-    const otherUserId = otherUserResult.rows[0].id;
+    const participantIds = await getParticipantIdsByUsernames(userId, participantUsernames);
 
-    if (otherUserId === currentUserId) {
-      throw new Error("Cannot create chat with yourself");
+    if (participantIds.length === 1) {
+        const existing = await findDirectChat(userId, participantIds[0]);
+        if (existing) return existing;
+        return await createDirectChat(userId, participantIds[0]);
     }
 
-    // Check if chat already exists
-    const existingChatResult = await pool.query(`
-      SELECT c.id FROM "Chats" c
-      WHERE c.id IN (
-        SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $1
-      )
-      AND c.id IN (
-        SELECT "chatId" FROM "ChatParticipants" WHERE "userId" = $2
-      )
-      LIMIT 1
-    `, [currentUserId, otherUserId]);
+    return await createGroupChat([userId, ...participantIds], groupName);
+};
 
-    if (existingChatResult.rows.length > 0) {
-      return { id: existingChatResult.rows[0].id };
+const getParticipantIdsByUsernames = async (userId, usernames) => {
+    const ids = [];
+
+    for (const username of usernames) {
+        const result = await pool.query(
+            `SELECT id FROM "Users" WHERE username = $1`,
+            [username]
+        );
+
+        if (!result.rows.length) throw new Error(`User not found: ${username}`);
+
+        const participantId = result.rows[0].id;
+        if (participantId === userId) throw new Error("Cannot create chat with yourself");
+
+        ids.push(participantId);
     }
 
-    // Create new chat
-    const otherUserResult2 = await pool.query(
-      'SELECT username FROM "Users" WHERE id = $1',
-      [otherUserId]
+    return ids;
+};
+
+const findDirectChat = async (userId1, userId2) => {
+    const [u1, u2] = userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+
+    const result = await pool.query(`
+        SELECT c.id FROM "Chats" c
+        JOIN "ChatParticipants" cp1 ON cp1."chatId" = c.id
+        JOIN "ChatParticipants" cp2 ON cp2."chatId" = c.id
+        WHERE c.type = 'direct' AND cp1."userId" = $1 AND cp2."userId" = $2
+        LIMIT 1
+    `, [u1, u2]);
+
+    return result.rows[0] ?? null;
+};
+
+const createDirectChat = async (userId1, userId2) => {
+    const [u1, u2] = userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+
+    const { rows } = await pool.query(
+        `INSERT INTO "Chats" (type) VALUES ('direct') RETURNING id`
     );
+    const chatId = rows[0].id;
 
-    const chatTitle = `${otherUserResult2.rows[0].username} & You`;
-
-    const chatResult = await pool.query(
-      'INSERT INTO "Chats" (title) VALUES ($1) RETURNING id, title',
-      [chatTitle]
-    );
-
-    const chatId = chatResult.rows[0].id;
-
-    // Add participants
     await pool.query(
-      'INSERT INTO "ChatParticipants" ("chatId", "userId") VALUES ($1, $2), ($1, $3)',
-      [chatId, currentUserId, otherUserId]
+        `INSERT INTO "ChatParticipants" ("chatId", "userId") VALUES ($1, $2), ($1, $3)`,
+        [chatId, u1, u2]
     );
 
-    return { id: chatId, title: chatTitle };
-  } catch (err) {
-    throw err;
-  }
+    return { id: chatId };
+};
+
+const createGroupChat = async (participantIds, groupName) => {
+    const { rows } = await pool.query(
+        `INSERT INTO "Chats" (type, title) VALUES ('group', $1) RETURNING id`,
+        [groupName]
+    );
+    const chatId = rows[0].id;
+
+    await pool.query(
+        `INSERT INTO "ChatParticipants" ("chatId", "userId")
+         SELECT $1, UNNEST($2::int[])`,
+        [chatId, participantIds]
+    );
+
+    return { id: chatId };
 };
 
 export { getChats, createChat };
