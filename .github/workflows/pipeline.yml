@@ -11,78 +11,102 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      backend_tag: ${{ steps.meta.outputs.backend_tag }}
+      frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build backend image
+      - name: Generate image tags
+        id: meta
         run: |
-          docker build -t backend:latest ./backend
-          docker save backend:latest | gzip > backend.tar.gz
+          echo "backend_tag=${{ env.IMAGE_BASE }}/backend:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "frontend_tag=${{ env.IMAGE_BASE }}/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Build frontend image
+      - name: Save tags as artifacts
         run: |
-          docker build -t frontend:latest ./frontend
-          docker save frontend:latest | gzip > frontend.tar.gz
+          echo "${{ steps.meta.outputs.backend_tag }}" > backend.txt
+          echo "${{ steps.meta.outputs.frontend_tag }}" > frontend.txt
 
-      - name: Upload backend artifact
+      - name: Upload backend tag
         uses: actions/upload-artifact@v4
         with:
-          name: backend-image
-          path: backend.tar.gz
+          name: backend-tag
+          path: backend.txt
+          retention-days: 1
 
-      - name: Upload frontend artifact
+      - name: Upload frontend tag
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-image
-          path: frontend.tar.gz
+          name: frontend-tag
+          path: frontend.txt
+          retention-days: 1
 
   push:
     needs: build
     runs-on: ubuntu-latest
     environment: prod
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download backend image
+      - name: Download backend tag
         uses: actions/download-artifact@v4
         with:
-          name: backend-image
+          name: backend-tag
 
-      - name: Download frontend image
+      - name: Download frontend tag
         uses: actions/download-artifact@v4
         with:
-          name: frontend-image
+          name: frontend-tag
 
-      - name: Load backend image
-        run: gunzip -c backend.tar.gz | docker load
+      - name: Read tags
+        id: tags
+        run: |
+          echo "BACKEND_TAG=$(cat backend.txt)" >> $GITHUB_ENV
+          echo "FRONTEND_TAG=$(cat frontend.txt)" >> $GITHUB_ENV
 
-      - name: Load frontend image
-        run: gunzip -c frontend.tar.gz | docker load
-
-      - name: Login to GitHub Container Registry
+      - name: Login to GHCR
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Tag & push backend
+      - name: Build & push backend
         run: |
-          docker tag backend:latest ${{ env.IMAGE_BASE }}/backend:latest
-          docker push ${{ env.IMAGE_BASE }}/backend:latest
+          docker build -t $BACKEND_TAG ./backend
+          docker push $BACKEND_TAG
 
-      - name: Tag & push frontend
+      - name: Build & push frontend
         run: |
-          docker tag frontend:latest ${{ env.IMAGE_BASE }}/frontend:latest
-          docker push ${{ env.IMAGE_BASE }}/frontend:latest
+          docker build -t $FRONTEND_TAG ./frontend
+          docker push $FRONTEND_TAG
 
   deploy:
     needs: push
     runs-on: ubuntu-latest
     environment: prod
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy deployment manifests to server
+      - name: Download backend tag
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-tag
+
+      - name: Download frontend tag
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-tag
+
+      - name: Read tags
+        run: |
+          echo "BACKEND_TAG=$(cat backend.txt)" >> $GITHUB_ENV
+          echo "FRONTEND_TAG=$(cat frontend.txt)" >> $GITHUB_ENV
+
+      - name: Copy manifests to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.CLUSTER_IP }}
@@ -91,7 +115,7 @@ jobs:
           source: deployment/
           target: /opt/app
 
-      - name: Deploy via SSH (kubectl)
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.CLUSTER_IP }}
@@ -99,10 +123,13 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             cd /opt/app/deployment
+
+            kubectl set image deployment/backend-deployment backend=$BACKEND_TAG
+            kubectl set image deployment/frontend-deployment frontend=$FRONTEND_TAG
+
             kubectl apply -f redis/
             kubectl apply -f backend/
             kubectl apply -f frontend/
 
-            kubectl rollout restart deployment redis
-            kubectl rollout restart deployment backend-deployment
-            kubectl rollout restart deployment frontend-deployment
+            kubectl rollout status deployment/backend-deployment
+            kubectl rollout status deployment/frontend-deployment
