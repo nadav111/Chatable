@@ -13,15 +13,15 @@ spec:
         app: socket
     spec:
       imagePullSecrets:
-          - name: ghcr-secret
+        - name: ghcr-secret
       containers:
         - name: socket
           image: ghcr.io/nadav111/chatable/socket:latest
           ports:
             - containerPort: 4000
           env:
-          - name: REDIS_URL
-            value: "redis://redis-service:6379"
+            - name: REDIS_URL
+              value: "redis://redis-service:6379"
           resources:
             requests:
               memory: "128Mi"
