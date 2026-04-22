@@ -6,68 +6,16 @@ on:
       - main
 
 env:
-  IMAGE_BASE: ghcr.io/nadav111/chatable
+  BACKEND_TAG: ghcr.io/nadav111/chatable/backend:${{ github.sha }}
+  FRONTEND_TAG: ghcr.io/nadav111/chatable/frontend:${{ github.sha }}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    outputs:
-      backend_tag: ${{ steps.meta.outputs.backend_tag }}
-      frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate image tags
-        id: meta
-        run: |
-          echo "backend_tag=${{ env.IMAGE_BASE }}/backend:${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "frontend_tag=${{ env.IMAGE_BASE }}/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
-
-      - name: Save tags as artifacts
-        run: |
-          echo "${{ steps.meta.outputs.backend_tag }}" > backend.txt
-          echo "${{ steps.meta.outputs.frontend_tag }}" > frontend.txt
-
-      - name: Upload backend tag
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-tag
-          path: backend.txt
-          retention-days: 1
-
-      - name: Upload frontend tag
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-tag
-          path: frontend.txt
-          retention-days: 1
-
   push:
-    needs: build
     runs-on: ubuntu-latest
     environment: prod
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download backend tag
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-tag
-
-      - name: Download frontend tag
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-tag
-
-      - name: Read tags
-        id: tags
-        run: |
-          echo "BACKEND_TAG=$(cat backend.txt)" >> $GITHUB_ENV
-          echo "FRONTEND_TAG=$(cat frontend.txt)" >> $GITHUB_ENV
 
       - name: Login to GHCR
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -86,25 +34,17 @@ jobs:
     needs: push
     runs-on: ubuntu-latest
     environment: prod
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download backend tag
-        uses: actions/download-artifact@v4
+      - name: Clean old manifests
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          name: backend-tag
-
-      - name: Download frontend tag
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-tag
-
-      - name: Read tags
-        run: |
-          echo "BACKEND_TAG=$(cat backend.txt)" >> $GITHUB_ENV
-          echo "FRONTEND_TAG=$(cat frontend.txt)" >> $GITHUB_ENV
+          host: ${{ secrets.CLUSTER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: rm -rf /opt/app/deployment
 
       - name: Copy manifests to server
         uses: appleboy/scp-action@v0.1.7
@@ -124,12 +64,12 @@ jobs:
           script: |
             cd /opt/app/deployment
 
-            kubectl set image deployment/backend-deployment backend=$BACKEND_TAG
-            kubectl set image deployment/frontend-deployment frontend=$FRONTEND_TAG
-
             kubectl apply -f redis/
             kubectl apply -f backend/
             kubectl apply -f frontend/
 
-            kubectl rollout status deployment/backend-deployment
-            kubectl rollout status deployment/frontend-deployment
+            kubectl set image deployment/backend-deployment backend=${{ env.BACKEND_TAG }}
+            kubectl set image deployment/frontend-deployment frontend=${{ env.FRONTEND_TAG }}
+
+            kubectl rollout status deployment/backend-deployment --timeout=120s
+            kubectl rollout status deployment/frontend-deployment --timeout=120s
