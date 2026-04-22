@@ -70,8 +70,6 @@ jobs:
 
             kubectl set image deployment/backend-deployment backend=${{ env.BACKEND_TAG }}
             kubectl set image deployment/frontend-deployment frontend=${{ env.FRONTEND_TAG }}
-            kubectl set image deployment/socket-deployment socket=${{ env.BACKEND_TAG }}
 
             kubectl rollout status deployment/backend-deployment --timeout=120s
             kubectl rollout status deployment/frontend-deployment --timeout=120s
-            kubectl rollout status deployment/socket-deployment --timeout=120s
