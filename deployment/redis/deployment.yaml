@@ -12,10 +12,10 @@ spec:
       labels:
         app: redis
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: redis
           image: redis:7
           ports:
             - containerPort: 6379
-      imagePullSecrets:
-        - name: ghcr-secret

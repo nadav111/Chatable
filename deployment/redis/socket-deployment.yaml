@@ -12,6 +12,8 @@ spec:
       labels:
         app: socket
     spec:
+      imagePullSecrets:
+          - name: ghcr-secret
       containers:
         - name: socket
           image: ghcr.io/nadav111/chatable/socket:latest
@@ -37,5 +39,3 @@ spec:
               port: 4000
             initialDelaySeconds: 15
             periodSeconds: 20
-        imagePullSecrets:
-        - name: ghcr-secret
