@@ -6,7 +6,7 @@ const getBaseUrl = () => {
         return 'http://localhost:3000/api';
     }
     
-    return `http://${hostname}:3000/api`;
+    return `http://${hostname}/api`;
 };
 
 const BASE_URL = getBaseUrl();
