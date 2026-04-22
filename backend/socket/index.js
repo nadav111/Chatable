@@ -22,6 +22,7 @@ export const initSocket = async (server) => {
     console.log("✅ Socket.IO + Redis connected");
   } catch (err) {
     console.warn("⚠️ Redis not available - running without cluster mode");
+    console.error("❌ Redis connection failed:", err.message);
   }
 
   registerConnectionEvents(io);

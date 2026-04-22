@@ -8,6 +8,7 @@ on:
 env:
   BACKEND_TAG: ghcr.io/nadav111/chatable/backend:${{ github.sha }}
   FRONTEND_TAG: ghcr.io/nadav111/chatable/frontend:${{ github.sha }}
+  SOCKET_TAG: ghcr.io/nadav111/chatable/socket:${{ github.sha }}
 
 jobs:
   push:
@@ -29,6 +30,11 @@ jobs:
         run: |
           docker build -t $FRONTEND_TAG ./frontend
           docker push $FRONTEND_TAG
+
+      - name: Build & push socket
+        run: |
+          docker build -t $SOCKET_TAG ./socket-server
+          docker push $SOCKET_TAG
 
   deploy:
     needs: push
@@ -70,6 +76,8 @@ jobs:
 
             kubectl set image deployment/backend-deployment backend=${{ env.BACKEND_TAG }}
             kubectl set image deployment/frontend-deployment frontend=${{ env.FRONTEND_TAG }}
+            kubectl set image deployment/socket-deployment socket=${{ env.SOCKET_TAG }}
 
             kubectl rollout status deployment/backend-deployment --timeout=120s
             kubectl rollout status deployment/frontend-deployment --timeout=120s
+            kubectl rollout status deployment/socket-deployment --timeout=120s

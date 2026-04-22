@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socket-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: socket
+  template:
+    metadata:
+      labels:
+        app: socket
+    spec:
+      containers:
+        - name: socket
+          image: ghcr.io/nadav111/chatable/socket:latest
+          ports:
+            - containerPort: 4000
+          env:
+          - name: REDIS_URL
+            value: "redis://redis-service:6379"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          readinessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 20
