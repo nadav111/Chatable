@@ -155,18 +155,6 @@ stringData:
   JWT_SECRET: "your_jwt_secret_here"
 ```
 
-**`db-configmap.yaml`** — PostgreSQL user config:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: db-config
-data:
-  DB_USER: "chatable"
-  DB_PASSWORD: "your_db_password"
-```
-
 **`db-secret.yaml`** — PostgreSQL admin password:
 
 ```yaml
