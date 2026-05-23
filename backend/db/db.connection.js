@@ -4,16 +4,16 @@ import dotenv from 'dotenv';
 dotenv.config(); 
 
 const pool = new pg.Pool({
-  host: process.env.DATABASE_HOST || 'localhost', // Changed from 'db-service'
+  host: process.env.DB_HOST || 'localhost',
   port: 5432,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  database: process.env.POSTGRES_DB
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
 
 const connectDB = async () => {
   try {
-    console.log('Connecting to PostgreSQL...' + `Host: ${process.env.DATABASE_HOST}, User: ${process.env.POSTGRES_USER}, Database: ${process.env.POSTGRES_DB}`);
+    console.log('Connecting to PostgreSQL...' + `Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}`);
     await pool.connect();
 
     await pool.query('SELECT 1');
