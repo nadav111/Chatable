@@ -7,9 +7,12 @@
 ![Express](https://img.shields.io/badge/Express-000000?style=flat&logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=flat&logo=socket.io&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
+**Live:** [snas.website](http://snas.website)
 
 ---
 
@@ -20,13 +23,7 @@
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Local Deployment](#local-deployment)
-  - [Prerequisites](#prerequisites)
-  - [Run with Docker Compose](#run-with-docker-compose)
-  - [Environment Variables](#environment-variables)
-- [Production Deployment (Kubernetes)](#production-deployment-kubernetes)
-  - [Prerequisites](#prerequisites-1)
-  - [Configure Secrets & ConfigMaps](#configure-secrets--configmaps)
-  - [Apply Manifests](#apply-manifests)
+- [Production Deployment](#production-deployment)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -35,46 +32,64 @@
 
 ## Overview
 
-Chatable is a full-stack real-time messaging platform that supports one-on-one direct messages and multi-user group chats. Built with a Node.js/Express backend, a vanilla JS/HTML/CSS frontend, and backed by PostgreSQL for persistent storage and Redis for fast session and pub/sub handling.
+Chatable is a full-stack real-time messaging platform that supports one-on-one direct messages and multi-user group chats. Built with a Node.js/Express backend, a vanilla JS/HTML/CSS frontend, PostgreSQL for persistent storage, and Redis as a Socket.io adapter for scaling WebSocket connections across multiple backend replicas.
 
 ---
 
 ## Features
 
-- 💬 **Real-time messaging** — Instant message delivery via WebSockets
-- 📨 **Direct Messages (DM)** — Private one-on-one conversations
+- 💬 **Real-time messaging** — Instant message delivery via Socket.io WebSockets
+- 📨 **Direct Messages** — Private one-on-one conversations created automatically when accepting a friend request
 - 👥 **Group Chats** — Create and manage multi-user chat rooms
-- 🔐 **Authentication** — Secure user sign-up and login
+- 👫 **Friend system** — Send, accept, and decline friend requests with real-time badge notifications
+- 🔐 **Authentication** — JWT-based sign-up and login
 - 📦 **Persistent storage** — Message history stored in PostgreSQL
-- ⚡ **Redis caching** — Fast session management and pub/sub for scalability
-- 🐳 **Containerized** — Docker + Kubernetes ready for production deployments
+- ⚡ **Redis adapter** — Socket.io Redis adapter for multi-replica WebSocket scaling
+- 🐳 **Containerized** — Docker + Kubernetes production deployment with CI/CD via GitHub Actions
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────┐        ┌──────────────────┐        ┌─────────────┐
-│   Frontend  │◄──────►│  Express Backend  │◄──────►│  PostgreSQL │
-│  (HTML/CSS/ │  HTTP/ │  (Node.js)        │        │     DB      │
-│    JS)      │   WS   │                  │◄──────►│    Redis    │
-└─────────────┘        └──────────────────┘        └─────────────┘
+                        ┌─────────────────────────────┐
+                        │        Nginx Ingress         │
+                        │       snas.website           │
+                        └──────────────┬──────────────┘
+                                       │
+              ┌────────────────────────┼──────────────────────┐
+              │ /                      │ /api                  │ /socket.io
+              ▼                        ▼                       ▼
+    ┌──────────────────┐    ┌──────────────────────────────────────┐
+    │     Frontend     │    │          Backend (x3 replicas)       │
+    │  Nginx + HTML/   │    │         Node.js + Express            │
+    │   CSS / JS       │    │         Socket.io server             │
+    └──────────────────┘    └───────────────┬──────────────────────┘
+                                            │
+                            ┌───────────────┼───────────────┐
+                            ▼               ▼               ▼
+                    ┌──────────────┐  ┌──────────┐  ┌────────────┐
+                    │  PostgreSQL  │  │  Redis   │  │  Socket.io │
+                    │  (messages,  │  │ (adapter)│  │   rooms    │
+                    │  users, etc) │  └──────────┘  └────────────┘
+                    └──────────────┘
 ```
-
-The frontend communicates with the backend over HTTP (REST) and WebSockets for real-time events. The backend persists messages and user data in PostgreSQL, and uses Redis for session storage and pub/sub messaging between server instances.
 
 ---
 
 ## Tech Stack
 
-| Layer      | Technology                       |
-|------------|----------------------------------|
-| Frontend   | HTML, CSS, JavaScript            |
-| Backend    | Node.js, Express.js              |
-| Database   | PostgreSQL                       |
-| Cache/PubSub | Redis                          |
-| Containerization | Docker, Kubernetes         |
-| CI/CD      | GitHub Actions                   |
+| Layer | Technology |
+|---|---|
+| Frontend | HTML, CSS, Vanilla JavaScript |
+| Backend | Node.js, Express.js |
+| Real-time | Socket.io |
+| Database | PostgreSQL |
+| Cache / PubSub | Redis (Socket.io adapter) |
+| Containerization | Docker |
+| Orchestration | Kubernetes |
+| CI/CD | GitHub Actions |
+| Registry | GitHub Container Registry (GHCR) |
 
 ---
 
@@ -82,26 +97,39 @@ The frontend communicates with the backend over HTTP (REST) and WebSockets for r
 
 ### Prerequisites
 
-- [Docker](https://www.docker.com/) & Docker Compose
+- [Docker](https://www.docker.com/) and Docker Compose
+- [Node.js](https://nodejs.org/) v20+
 
 ### Run with Docker Compose
-
-1. **Clone the repository**
 
 ```bash
 git clone https://github.com/nadav111/Chatable.git
 cd Chatable
 ```
 
-2. **Set up environment variables** (see below)
+Create a `.env` file in `backend/`:
 
-3. **Start all services**
+```env
+# Database
+DB_HOST=db
+DB_USER=chatable_user
+DB_PASSWORD=chatable_password
+DB_NAME=chatable
+
+# JWT
+JWT_SECRET=your_jwt_secret_here
+
+# Redis
+REDIS_URL=redis://redis:6379
+```
+
+Start all services:
 
 ```bash
 docker compose up --build
 ```
 
-This starts the backend, frontend, PostgreSQL, and Redis containers together. Open `http://localhost:3000` in your browser.
+Open `http://localhost` in your browser.
 
 To stop:
 
@@ -109,81 +137,52 @@ To stop:
 docker compose down
 ```
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-// Database configuration
-DB_HOST=localhost
-DB_USER=postgres
-DB_PASSWORD=admin
-DB_NAME=postgres
-
-// JWT configuration
-JWT_SECRET=your_jwt_secret_key_here
-
-// Redis configuration
-REDIS_URL=redis://localhost:6379
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
-
 ---
 
-## Production Deployment (Kubernetes)
+## Production Deployment
 
 ### Prerequisites
 
-- A running Kubernetes cluster (e.g. EKS, GKE, AKS, or self-hosted)
-- [`kubectl`](https://kubernetes.io/docs/tasks/tools/) configured to point at your cluster
-- Docker images built and pushed to a container registry
+- A running Kubernetes cluster
+- `kubectl` configured to point at your cluster
+- Helm installed
+- A domain pointing to your cluster IP
 
-### Configure Secrets & ConfigMaps
-
-Before applying the manifests, fill in your production values in the files under `deployment/`.
-
-**`backend-secret.yaml`** — JWT secret for the backend:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: backend-secret
-type: Opaque
-stringData:
-  JWT_SECRET: "your_jwt_secret_here"
-```
-
-**`db-secret.yaml`** — PostgreSQL admin password:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: db-secret
-type: Opaque
-stringData:
-  DB_HOST: "localhost"
-  DB_NAME: "postgres"
-  DB_USER: "postgres_user"
-  DB_PASSWORD: "postgres_password"
-```
-
-### Apply Manifests
+### 1. Create secrets
 
 ```bash
-# Apply secrets and config first
-kubectl apply -f deployment/db-secret.yaml
-kubectl apply -f deployment/backend-secret.yaml
+kubectl create secret generic app-secrets \
+  --from-literal=JWT_SECRET=your_jwt_secret \
+  --from-literal=DB_URI=postgresql://chatable_user:chatable_password@db-service:5432/chatable
 
-# Apply the rest of the manifests
-kubectl apply -f deployment/
-
-# Verify everything is running
-kubectl get pods
-kubectl get services
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io \
+  --docker-username=your_github_username \
+  --docker-password=your_PAT
 ```
+
+### 2. Apply manifests
+
+```bash
+kubectl apply -f deployment/db/
+kubectl apply -f deployment/redis/
+kubectl apply -f deployment/backend/
+kubectl apply -f deployment/frontend/
+```
+
+### 3. Verify
+
+```bash
+kubectl get pods
+kubectl get ingress
+```
+
+### CI/CD
+
+Every push to `main` triggers the GitHub Actions pipeline which:
+1. Builds and pushes Docker images to GHCR
+2. SSHs into the server and applies updated manifests
+3. Rolls out new images with zero downtime via `kubectl rollout`
 
 ---
 
@@ -192,14 +191,32 @@ kubectl get services
 ```
 Chatable/
 ├── .github/
-│   └── workflows/          # CI/CD pipelines
+│   └── workflows/
+│       └── pipeline.yml        # CI/CD pipeline
 ├── backend/
-│   ├── src/                # Express app, routes, controllers
-│   └── package.json
+│   ├── controllers/            # Request handlers
+│   ├── services/               # Business logic
+│   ├── routes/                 # Express routes
+│   ├── db/                     # PostgreSQL connection
+│   ├── socket/                 # Socket.io setup + events
+│   ├── middleware/             # Auth, error handling
+│   ├── app.js
+│   └── Dockerfile
 ├── frontend/
-│   ├── src/                # HTML, CSS, JavaScript
-│   └── ...
-├── deployment/             # Kubernetes manifests
+│   ├── css/                    # Stylesheets
+│   ├── js/
+│   │   ├── managers/           # ChatManager, FriendManager, UIManager
+│   │   └── utils/              # State management
+│   ├── lib/                    # API client, toast, socket
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   └── Dockerfile
+├── deployment/
+│   ├── backend/                # Backend K8s manifests
+│   ├── frontend/               # Frontend + ingress manifests
+│   ├── db/                     # PostgreSQL StatefulSet + PVC
+│   └── redis/                  # Redis deployment
 └── docker-compose.yml
 ```
 
@@ -207,15 +224,11 @@ Chatable/
 
 ## Contributing
 
-Contributions are welcome! To get started:
-
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Commit your changes: `git commit -m 'Add my feature'`
 4. Push to the branch: `git push origin feature/my-feature`
 5. Open a Pull Request
-
-Please make sure your code follows the existing style and that any new features are reasonably tested.
 
 ---
 
