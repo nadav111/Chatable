@@ -150,15 +150,37 @@ docker compose down
 
 ### 1. Create secrets
 
-```bash
-kubectl create secret generic app-secrets \
-  --from-literal=JWT_SECRET=your_jwt_secret \
-  --from-literal=DB_URI=postgresql://chatable_user:chatable_password@db-service:5432/chatable
+Before deploying, create the following secret files locally and fill in your own values
 
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=ghcr.io \
-  --docker-username=your_github_username \
-  --docker-password=your_PAT
+**`backend-secret.yaml`:**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+type: Opaque
+stringData:
+  JWT_SECRET: "your_jwt_secret_here"
+```
+
+**`db-secret.yaml`:**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+stringData:
+  DB_HOST: "db-service"
+  DB_USER: "your_db_user"
+  DB_PASSWORD: "your_db_password"
+  DB_NAME: "chatable"
+```
+
+Apply them manually:
+```bash
+kubectl apply -f backend-secret.yaml
+kubectl apply -f db-secret.yaml
 ```
 
 ### 2. Apply manifests
