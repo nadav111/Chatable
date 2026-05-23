@@ -114,16 +114,16 @@ docker compose down
 Create a `.env` file in the root directory:
 
 ```env
-# Database
-DATABASE_HOST=localhost
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_postgres_password
-POSTGRES_DB=postgres
+// Database configuration
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=admin
+DB_NAME=postgres
 
-# JWT
+// JWT configuration
 JWT_SECRET=your_jwt_secret_key_here
 
-# Redis
+// Redis configuration
 REDIS_URL=redis://localhost:6379
 REDIS_HOST=localhost
 REDIS_PORT=6379
@@ -164,17 +164,17 @@ metadata:
   name: db-secret
 type: Opaque
 stringData:
-  POSTGRES_PASSWORD: "your_postgres_password"
+  DB_HOST: "localhost"
+  DB_NAME: "postgres"
+  DB_USER: "postgres_user"
+  DB_PASSWORD: "postgres_password"
 ```
-
-> ⚠️ Never commit real secrets to source control. Use a secrets manager (e.g. AWS Secrets Manager, Vault) or sealed secrets in production.
 
 ### Apply Manifests
 
 ```bash
 # Apply secrets and config first
 kubectl apply -f deployment/db-secret.yaml
-kubectl apply -f deployment/db-configmap.yaml
 kubectl apply -f deployment/backend-secret.yaml
 
 # Apply the rest of the manifests
