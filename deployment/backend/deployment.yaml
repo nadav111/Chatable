@@ -19,19 +19,9 @@ spec:
           ports:
             - containerPort: 3000
           envFrom:
-            - configMapRef:
-                name: db-config
             - secretRef:
                 name: db-secret
-          env:
-            - name: DATABASE_HOST
-              value: "db-service"
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: JWT_SECRET
-            - name: REDIS_URL
-              value: "redis://redis-service:6379"
+            - configMapRef:
+                name: backend-config
       imagePullSecrets:
         - name: ghcr-secret
