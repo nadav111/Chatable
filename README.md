@@ -19,13 +19,14 @@
 - [Features](#features)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
+- [Local Deployment](#local-deployment)
   - [Prerequisites](#prerequisites)
-  - [Local Development](#local-development)
+  - [Run with Docker Compose](#run-with-docker-compose)
   - [Environment Variables](#environment-variables)
-- [Deployment](#deployment)
-  - [Docker](#docker)
-  - [Kubernetes](#kubernetes)
+- [Production Deployment (Kubernetes)](#production-deployment-kubernetes)
+  - [Prerequisites](#prerequisites-1)
+  - [Configure Secrets & ConfigMaps](#configure-secrets--configmaps)
+  - [Apply Manifests](#apply-manifests)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -77,16 +78,13 @@ The frontend communicates with the backend over HTTP (REST) and WebSockets for r
 
 ---
 
-## Getting Started
+## Local Deployment
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+
 - [Docker](https://www.docker.com/) & Docker Compose
-- [PostgreSQL](https://www.postgresql.org/) (or use Docker)
-- [Redis](https://redis.io/) (or use Docker)
 
-### Local Development
+### Run with Docker Compose
 
 1. **Clone the repository**
 
@@ -95,82 +93,109 @@ git clone https://github.com/nadav111/Chatable.git
 cd Chatable
 ```
 
-2. **Install backend dependencies**
+2. **Set up environment variables** (see below)
 
-```bash
-cd backend
-npm install
-```
-
-3. **Install frontend dependencies** (if applicable)
-
-```bash
-cd ../frontend
-npm install
-```
-
-4. **Set up environment variables** (see below)
-
-5. **Start the development servers**
-
-```bash
-# From the backend directory
-npm run dev
-```
-
-Then open `http://localhost:3000` (or your configured port) in your browser.
-
-### Environment Variables
-
-Create a `.env` file in the `backend/` directory based on the following:
-
-```env
-# Server
-PORT=3000
-NODE_ENV=development
-
-# PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=chatable
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Auth
-JWT_SECRET=your_jwt_secret
-```
-
----
-
-## Deployment
-
-### Docker
-
-Build and run the full stack with Docker Compose:
+3. **Start all services**
 
 ```bash
 docker compose up --build
 ```
 
-This spins up the backend, frontend, PostgreSQL, and Redis services together.
+This starts the backend, frontend, PostgreSQL, and Redis containers together. Open `http://localhost:3000` in your browser.
 
-### Kubernetes
-
-Kubernetes manifests are located in the `deployment/` directory.
+To stop:
 
 ```bash
-# Apply all manifests
-kubectl apply -f deployment/
-
-# Check running pods
-kubectl get pods
+docker compose down
 ```
 
-Make sure to configure your secrets (DB credentials, JWT secret, etc.) as Kubernetes Secrets before applying.
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Database
+DATABASE_HOST=localhost
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_postgres_password
+POSTGRES_DB=postgres
+
+# JWT
+JWT_SECRET=your_jwt_secret_key_here
+
+# Redis
+REDIS_URL=redis://localhost:6379
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+---
+
+## Production Deployment (Kubernetes)
+
+### Prerequisites
+
+- A running Kubernetes cluster (e.g. EKS, GKE, AKS, or self-hosted)
+- [`kubectl`](https://kubernetes.io/docs/tasks/tools/) configured to point at your cluster
+- Docker images built and pushed to a container registry
+
+### Configure Secrets & ConfigMaps
+
+Before applying the manifests, fill in your production values in the files under `deployment/`.
+
+**`backend-secret.yaml`** — JWT secret for the backend:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+type: Opaque
+stringData:
+  JWT_SECRET: "your_jwt_secret_here"
+```
+
+**`db-configmap.yaml`** — PostgreSQL user config:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  DB_USER: "chatable"
+  DB_PASSWORD: "your_db_password"
+```
+
+**`db-secret.yaml`** — PostgreSQL admin password:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "your_postgres_password"
+```
+
+> ⚠️ Never commit real secrets to source control. Use a secrets manager (e.g. AWS Secrets Manager, Vault) or sealed secrets in production.
+
+### Apply Manifests
+
+```bash
+# Apply secrets and config first
+kubectl apply -f deployment/db-secret.yaml
+kubectl apply -f deployment/db-configmap.yaml
+kubectl apply -f deployment/backend-secret.yaml
+
+# Apply the rest of the manifests
+kubectl apply -f deployment/
+
+# Verify everything is running
+kubectl get pods
+kubectl get services
+```
 
 ---
 
