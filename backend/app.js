@@ -8,7 +8,9 @@ import homeRouter from "./routers/home.router.js";
 import messagesRouter from "./routers/messages.router.js";
 import chatRouter from "./routers/chat.router.js";
 import friendsRouter from "./routers/friends.router.js";
+import metricsRouter from "./routers/metrics.router.js";
 import errorMiddleware from "./middlewares/errorMiddleware.js";
+import metricsMiddleware from "./middlewares/metricsMiddleware.js";
 
 import { initSocket } from "./socket/index.js";
 
@@ -22,6 +24,9 @@ await connectDB();
 
 app.use(cors());
 
+// Metrics middleware
+app.use(metricsMiddleware);
+
 // Middleware
 app.use(express.json());
 
@@ -30,6 +35,7 @@ app.use("/api/home", homeRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/chats", chatRouter);
 app.use("/api/friends", friendsRouter);
+app.use("/api/metrics", metricsRouter);
 
 app.use(errorMiddleware);
 
