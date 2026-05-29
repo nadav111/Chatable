@@ -141,7 +141,7 @@ const getMetricsContentType = () => {
   return register.contentType;
 };
 
-export {
+export default {
   getStats,
   recordHttpRequest,
   recordSocketConnection,
