@@ -1,4 +1,4 @@
-import { recordHttpRequest } from '../services/metrics.service.js';
+import metricsService from '../services/metrics.service.js';
 
 const metricsMiddleware = (req, res, next) => {
   const start = Date.now();
@@ -13,7 +13,7 @@ const metricsMiddleware = (req, res, next) => {
     const route = req.route?.path || req.path || "unknown";
     const statusCode = res.statusCode;
 
-    recordHttpRequest(method, route, statusCode, duration);
+    metricsService.recordHttpRequest(method, route, statusCode, duration);
 
     // Call the original end function
     originalEnd.apply(res, args);
