@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import http from "http";
 import cors from "cors";
 
-import connectDB from "./db/db.connection.js";
+import { connectDB } from "./db/db.connection.js";
 import homeRouter from "./routers/home.router.js";
 import messagesRouter from "./routers/messages.router.js";
 import chatRouter from "./routers/chat.router.js";
