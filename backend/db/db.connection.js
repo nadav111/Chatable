@@ -13,7 +13,7 @@ const pool = new pg.Pool({
 
 const connectDB = async () => {
   try {
-    console.log('Connecting to PostgreSQL...' + `Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}`);
+    console.log('Connecting to PostgreSQL...' + `Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}, password: ${process.env.DB_PASSWORD ? '****' : 'not set'}  `);
     await pool.connect();
 
     await pool.query('SELECT 1');
