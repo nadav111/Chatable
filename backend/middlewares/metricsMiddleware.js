@@ -1,4 +1,4 @@
-import { recordHttpRequest } from "../services/metrics.service.js";
+import { recordHttpRequest } from '../services/metrics.service';
 
 const metricsMiddleware = (req, res, next) => {
   const start = Date.now();
