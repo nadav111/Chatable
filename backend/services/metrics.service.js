@@ -78,7 +78,7 @@ const chatsCreated = new client.Counter({
   registers: [register],
 });
 
-const getStats = () => {
+const getStats = async () => {
     return {
         timestamp: new Date().toISOString(),
         metrics: {
@@ -132,8 +132,8 @@ const recordChatCreated = () => {
 };
 
 // Get metrics in Prometheus format
-const getMetrics = () => {
-  return register.metrics();
+const getMetrics = async () => {
+  return await register.metrics();
 };
 
 // Get metrics content type
